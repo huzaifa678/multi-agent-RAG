@@ -41,6 +41,7 @@ tavily-python>=0.5.0
 
 fastapi>=0.112.0
 uvicorn>=0.30.0
+fastmcp>=0.1.0
 
 anthropic 
 transformers 
