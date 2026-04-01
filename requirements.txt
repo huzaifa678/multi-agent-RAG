@@ -43,6 +43,8 @@ fastapi>=0.112.0
 uvicorn>=0.30.0
 fastmcp>=0.1.0
 
+wikipedia
+
 anthropic 
 transformers 
 torch 
