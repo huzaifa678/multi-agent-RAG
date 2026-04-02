@@ -32,9 +32,9 @@ You are a STRICT JSON generator.
 
 You MUST output ONLY valid JSON matching this schema:
 
-{
+{{
   "agent_calls": ["rag" | "web" | "memory"]
-}
+}}
 
 Rules:
 - NO markdown
