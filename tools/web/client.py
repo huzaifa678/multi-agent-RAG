@@ -1,3 +1,3 @@
 from fastmcp import Client
 
-web_client = Client("http://localhost:8001") 
+web_client = Client("http://localhost:8002") 
