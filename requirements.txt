@@ -44,8 +44,7 @@ uvicorn>=0.30.0
 fastmcp>=0.1.0
 
 wikipedia
-
-anthropic 
+langchain-anthropic>=0.3.0
 transformers 
 torch 
 accelerate
