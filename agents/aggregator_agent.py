@@ -20,7 +20,8 @@ from utils.config import Config
 llm = ChatAnthropic(
     api_key=Config.ANTHROPIC_API_KEY,
     model="claude-sonnet-4-6",
-    temperature=0
+    temperature=0,
+    max_tokens=1024,
 )
 
 
