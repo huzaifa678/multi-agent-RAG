@@ -1,10 +1,8 @@
 from tools.rag.client import rag_client
+from tools.rag.wrapper import rag_client_wrapper
 
 async def retrieve_documents(query: str, top_k: int = 4):
-    return await rag_client.call_tool(
-        "retrieve_documents_tool",
-        {"query": query, "top_k": top_k}
-    )
+    return await rag_client_wrapper.retrieve_documents(query, top_k)
 
 def add_documents(docs: list):
     return rag_client.call_tool(
