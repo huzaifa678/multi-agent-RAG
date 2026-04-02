@@ -1,6 +1,5 @@
 from tools.rag.client import get_rag_client
 
-
 class RAGClientWrapper:
     async def retrieve_documents(self, query: str, top_k: int = 4):
         client = await get_rag_client()

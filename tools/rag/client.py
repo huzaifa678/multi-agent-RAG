@@ -13,9 +13,18 @@ async def get_rag_client():
     return rag_client
 
 
-async def close_mcp():
+async def close_rag_client():
     global rag_client
 
-    if rag_client:
-        await rag_client.__aexit__(None, None, None)
+    if not rag_client:
+        return
+
+    try:
+        if hasattr(rag_client, "aclose"):
+            await rag_client.aclose()
+        elif hasattr(rag_client, "close"):
+            await rag_client.close()
+        else:
+            await rag_client.__aexit__(None, None, None)
+    finally:
         rag_client = None

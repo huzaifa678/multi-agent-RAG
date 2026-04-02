@@ -27,7 +27,7 @@ web_chain = WEB_PROMPT | llm | StrOutputParser()
 async def run_web(query: str):
     results = await search_web(query)
 
-    summary = await web_chain.invoke({
+    summary = await web_chain.ainvoke({
         "query": query,
         "results": results
     })

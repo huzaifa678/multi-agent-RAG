@@ -27,7 +27,7 @@ memory_chain = MEMORY_PROMPT | llm | StrOutputParser()
 async def run_memory(session_id: str):
     history = await get_history(session_id)
 
-    summary = await memory_chain.invoke({
+    summary = await memory_chain.ainvoke({
         "history": history
     })
 

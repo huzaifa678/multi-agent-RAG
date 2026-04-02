@@ -30,17 +30,16 @@ class SearchResult(TypedDict):
 
 
 def web_search(query: str) -> List[SearchResult]:
-    """
-    Hybrid search:
-    - Tavily (real-time web)
-    - Wikipedia (factual knowledge)
-    """
-
     results: List[SearchResult] = []
 
-
     try:
-        tavily_results = tavily.invoke({"query": query})
+        tavily_raw = tavily.invoke(query)
+
+        tavily_results = (
+            tavily_raw.get("results", [])
+            if isinstance(tavily_raw, dict)
+            else tavily_raw
+        )
 
         for r in tavily_results:
             results.append({
@@ -53,7 +52,6 @@ def web_search(query: str) -> List[SearchResult]:
     except Exception as e:
         print(f"Tavily error: {e}")
 
-
     try:
         wiki_docs = wiki_retriever.invoke(query)
 
@@ -61,12 +59,11 @@ def web_search(query: str) -> List[SearchResult]:
             results.append({
                 "source": "wikipedia",
                 "title": doc.metadata.get("title", query),
-                "url": doc.metadata.get("source", ""),
+                "url": doc.metadata.get("source", "") or doc.metadata.get("url", ""),
                 "content": doc.page_content
             })
 
     except Exception as e:
         print(f"Wikipedia error: {e}")
-
 
     return results

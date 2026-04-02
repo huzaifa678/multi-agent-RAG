@@ -13,9 +13,18 @@ async def get_web_client():
     return web_client
 
 
-async def close_mcp():
+async def close_web_client():
     global web_client
 
-    if web_client:
-        await web_client.__aexit__(None, None, None)
+    if not web_client:
+        return
+
+    try:
+        if hasattr(web_client, "aclose"):
+            await web_client.aclose()
+        elif hasattr(web_client, "close"):
+            await web_client.close()
+        else:
+            await web_client.__aexit__(None, None, None)
+    finally:
         web_client = None

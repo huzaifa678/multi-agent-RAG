@@ -1,5 +1,4 @@
 from typing import Dict, Any, List, TypedDict
-import json
 from langgraph.graph import StateGraph, START, END
 from langsmith import traceable
 
@@ -11,10 +10,10 @@ from agents.aggregator_agent import (
     final_chain
 )
 
+from core import runtime
 from agents.rag_agent import run_rag
 from agents.web_agent import run_web
 from agents.memory_agent import run_memory
-from core import runtime
 from memory.sqllite_memory import insert_long_term_memory
 
 
@@ -26,19 +25,15 @@ class WorkflowState(TypedDict, total=False):
     long_memory: str
 
     agent_calls: List[str]
+    executed_calls: List[str]
 
     rag: str
     web: str
     memory: str
 
+    done: bool
+
     final_response: str
-
-
-def parse_json(text: str):
-    try:
-        return json.loads(text)
-    except:
-        return {"agent_calls": []}
 
 
 def planner_node(state: WorkflowState):
@@ -54,53 +49,59 @@ def planner_node(state: WorkflowState):
     return {
         "short_memory": short_memory,
         "long_memory": long_memory,
-        "agent_calls": plan_result.agent_calls or []
+        "agent_calls": plan_result.agent_calls or [],
+        "executed_calls": []
     }
 
+
 def route_tools(state: WorkflowState):
+    if state.get("done"):
+        return "aggregator"
+
     calls = state.get("agent_calls", [])
+    executed = state.get("executed_calls", [])
 
-    routes = []
-    if "rag" in calls:
-        return "rag"
-    if "web" in calls:
-        return "web"
-    if "memory" in calls:
-        return "memory"
+    for call in calls:
+        if call not in executed:
+            return call
 
-    return "replan"
+    return "aggregator" 
+
 
 async def rag_node(state: WorkflowState):
     result = await run_rag(state["query"])
-    return {"rag": result["content"]}
+
+    executed = state.get("executed_calls", []) + ["rag"]
+
+    return {
+        "rag": result["content"],
+        "executed_calls": executed
+    }
 
 
 async def web_node(state: WorkflowState):
-    if state.get("web"):
-        return {}
-    
     result = await run_web(state["query"])
-    
-    return {"web": await result["content"]}
+
+    executed = state.get("executed_calls", []) + ["web"]
+
+    return {
+        "web": result["content"],
+        "executed_calls": executed
+    }
+
 
 async def memory_node(state: WorkflowState):
-    if state.get("memory"):
-        return {}
-    
     result = await run_memory(state["session_id"])
-    
-    return {"memory": result["content"]}
+
+    executed = state.get("executed_calls", []) + ["memory"]
+
+    return {
+        "memory": result["content"],
+        "executed_calls": executed
+    }
 
 
 def replan_node(state: WorkflowState):
-
-    iterations = state.get("iterations", 0) + 1
-
-    if iterations > 5:
-        return {
-            "done": True,
-            "iterations": iterations
-        }
     
     result = replan_chain.invoke({
         "query": state["query"],
@@ -109,10 +110,11 @@ def replan_node(state: WorkflowState):
         "memory": state.get("memory", "")
     })
 
+    is_done = getattr(result, "done", False)
+    
     return {
         "agent_calls": result.agent_calls or [],
-        "done": getattr(result, "done", False),
-         "iterations": iterations
+        "done": is_done
     }
 
 
@@ -126,7 +128,7 @@ def aggregator_node(state: WorkflowState):
         "web": state.get("web", "No relevant Web content found.")
     })
 
-    if state.get("session_id") and final_answer:
+    if state.get("session_id"):
         insert_long_term_memory(
             state["session_id"],
             f"[hybrid-react] Q: {state['query']} | A: {final_answer[:1000]}",
@@ -137,10 +139,6 @@ def aggregator_node(state: WorkflowState):
         "final_response": final_answer
     }
 
-def should_continue(state: WorkflowState):
-    if state.get("done"):
-        return "aggregator"
-    return "tools"
 
 def build_workflow_graph():
     graph = StateGraph(WorkflowState)
@@ -154,16 +152,11 @@ def build_workflow_graph():
 
     graph.add_edge(START, "planner")
 
-    graph.add_conditional_edges(
-        "planner",
-        lambda s: "tools",
-        {"tools": "rag", "replan": "replan"}
-    )
+    graph.add_edge("planner", "replan")
 
     graph.add_edge("rag", "replan")
     graph.add_edge("web", "replan")
     graph.add_edge("memory", "replan")
-
 
     graph.add_conditional_edges(
         "replan",
@@ -196,6 +189,7 @@ async def execute_workflow(query: str, session_id: str) -> Dict[str, Any]:
             "rag": state.get("rag"),
             "web": state.get("web"),
             "memory": state.get("memory"),
-            "agent_calls": state.get("agent_calls")
+            "agent_calls": state.get("agent_calls"),
+            "executed_calls": state.get("executed_calls"),
         }
     }
