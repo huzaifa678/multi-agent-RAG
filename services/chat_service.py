@@ -23,11 +23,7 @@ async def handle_chat(payload: ChatRequest):
 
         logger.info(f"Query contextualized | session_id={session_id}")
 
-        result = await asyncio.to_thread(
-            execute_workflow,
-            rewritten_query,
-            session_id
-        )
+        result = await execute_workflow(rewritten_query, session_id)
 
         logger.info(f"Workflow executed successfully | session_id={session_id}")
 

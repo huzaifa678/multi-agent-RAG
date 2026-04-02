@@ -70,11 +70,9 @@ def route_tools(state: WorkflowState):
 
     return "replan"
 
-def rag_node(state: WorkflowState):
-    if state.get("rag"):
-        return {}
-
-    return {"rag": run_rag(state["query"])["content"]}
+async def rag_node(state: WorkflowState):
+    result = await run_rag(state["query"])
+    return {"rag": result["content"]}
 
 
 def web_node(state: WorkflowState):
@@ -169,9 +167,9 @@ def build_workflow_graph():
 
 
 @traceable(name="langgraph_workflow")
-def execute_workflow(query: str, session_id: str) -> Dict[str, Any]:
+async def execute_workflow(query: str, session_id: str) -> Dict[str, Any]:
 
-    state = runtime.app_graph.invoke({
+    state = await runtime.app_graph.ainvoke({
         "query": query,
         "session_id": session_id
     })
