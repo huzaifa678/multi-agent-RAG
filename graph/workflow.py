@@ -45,20 +45,17 @@ def planner_node(state: WorkflowState):
     short_memory = build_short_term_memory(state["session_id"])
     long_memory = build_long_term_memory(state["session_id"])
 
-    plan_raw = plan_chain.invoke({
+    plan_result = plan_chain.invoke({
         "query": state["query"],
         "short_memory": short_memory,
         "long_memory": long_memory
     })
 
-    data = parse_json(plan_raw)
-
     return {
         "short_memory": short_memory,
         "long_memory": long_memory,
-        "agent_calls": data.get("agent_calls", [])
+        "agent_calls": plan_result.agent_calls or []
     }
-
 
 def route_tools(state: WorkflowState):
     calls = state.get("agent_calls", [])
