@@ -71,23 +71,25 @@ def route_tools(state: WorkflowState):
 
     return "replan"
 
-
 def rag_node(state: WorkflowState):
-    if not state.get("rag"):
-        return {"rag": run_rag(state["query"])["content"]}
-    return {}
+    if state.get("rag"):
+        return {}
+
+    return {"rag": run_rag(state["query"])["content"]}
 
 
 def web_node(state: WorkflowState):
-    if not state.get("web"):
-        return {"web": run_web(state["query"])["content"]}
-    return {}
+    if state.get("web"):
+        return {}
+    
+    return {"web": run_web(state["query"])["content"]}
 
 
 def memory_node(state: WorkflowState):
-    if not state.get("memory"):
-        return {"memory": run_memory(state["session_id"])["content"]}
-    return {}
+    if state.get("memory"):
+        return {}
+    
+    return {"memory": run_memory(state["session_id"])["content"]}
 
 
 def replan_node(state: WorkflowState):
