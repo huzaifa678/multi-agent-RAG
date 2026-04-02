@@ -90,17 +90,16 @@ def memory_node(state: WorkflowState):
 
 
 def replan_node(state: WorkflowState):
-    replan_raw = replan_chain.invoke({
+    result = replan_chain.invoke({
         "query": state["query"],
         "rag": state.get("rag", ""),
         "web": state.get("web", ""),
         "memory": state.get("memory", "")
     })
 
-    data = parse_json(replan_raw)
-
     return {
-        "agent_calls": data.get("agent_calls", [])
+        "agent_calls": result.agent_calls or [],
+        "done": getattr(result, "done", False)
     }
 
 
