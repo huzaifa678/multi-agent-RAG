@@ -10,13 +10,11 @@ from rag.chroma_store import vectorstore
 from rag.retriever import retrieve_context
 from utils.text import chunk_text, clean_text
 
-
 llm = ChatGroq(
     api_key=Config.GROQ_API_KEY,
     model="llama-3.3-70b-versatile",
     temperature=0
 )
-
 
 RAG_PROMPT = ChatPromptTemplate.from_messages([
     ("system",
@@ -24,7 +22,6 @@ RAG_PROMPT = ChatPromptTemplate.from_messages([
     ("human",
      "Query: {query}\n\nContext:\n{context}")
 ])
-
 
 rag_chain = RAG_PROMPT | llm | StrOutputParser()
 

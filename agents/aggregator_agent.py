@@ -179,7 +179,6 @@ def should_force_web(query: str, results: dict) -> bool:
     return any(k in query.lower() for k in keywords) and not results["web"]
 
 
-
 async def aggregate_response(query: str, session_id: str, max_steps: int = 3):
 
     short_memory = get_chat_history(session_id)
