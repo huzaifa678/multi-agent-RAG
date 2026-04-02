@@ -1,21 +1,9 @@
-import asyncio
 from fastapi import APIRouter
 from prompt_optimization.context_chains import contextualize
-from graph.workflow import execute_workflow
+from services.chat_service import handle_chat
 
 router = APIRouter()
 
 @router.post("/chat")
 async def chat(payload: dict):
-    rewritten_query = contextualize({
-        "input": payload["query"],
-        "history": payload.get("history", [])
-    })
-
-    result = await asyncio.to_thread(
-        execute_workflow,
-        rewritten_query,
-        payload["session_id"]
-    )
-
-    return result
+    return await handle_chat(payload)
