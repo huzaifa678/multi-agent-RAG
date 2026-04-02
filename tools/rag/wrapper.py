@@ -1,14 +1,12 @@
-from tools.rag.client import rag_client
+from tools.rag.client import get_rag_client
+
 
 class RAGClientWrapper:
-    def __init__(self, client):
-        self.client = client
-
     async def retrieve_documents(self, query: str, top_k: int = 4):
-        async with self.client:
-            return await self.client.call_tool(
-                "retrieve_documents_tool",
-                {"query": query, "top_k": top_k}
-            )
+        client = await get_rag_client()
+        return await client.call_tool(
+            "retrieve_documents_tool",
+            {"query": query, "top_k": top_k}
+        )
 
-rag_client_wrapper = RAGClientWrapper(rag_client)
+rag_client_wrapper = RAGClientWrapper()
