@@ -27,11 +27,13 @@ rag_chain = RAG_PROMPT | llm | StrOutputParser()
 
 @traceable(name="rag_retrieval")
 async def run_rag(query: str):
-    docs = await retrieve_documents(query)
+    result = await retrieve_documents(query)
+
+    docs = result.content
 
     context = "\n".join([d["content"] for d in docs])
 
-    answer = await rag_chain.invoke({
+    answer = await rag_chain.ainvoke({
         "query": query,
         "context": context
     })
