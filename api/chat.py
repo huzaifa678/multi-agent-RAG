@@ -3,9 +3,8 @@ import asyncio
 from fastapi import APIRouter
 
 from prompt_optimization.context_chains import contextualize
-from graph.workflow import execute_workflow  
-
-router = APIRouter()
+from graph.workflow import execute_workflow
+import router  
 
 @router.post("/chat")
 async def chat(payload: dict):

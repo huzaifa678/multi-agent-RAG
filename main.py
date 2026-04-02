@@ -5,7 +5,6 @@ from graph.workflow import build_workflow_graph
 
 app_graph = None  
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global app_graph
