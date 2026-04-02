@@ -93,6 +93,15 @@ async def memory_node(state: WorkflowState):
 
 
 def replan_node(state: WorkflowState):
+
+    iterations = state.get("iterations", 0) + 1
+
+    if iterations > 5:
+        return {
+            "done": True,
+            "iterations": iterations
+        }
+    
     result = replan_chain.invoke({
         "query": state["query"],
         "rag": state.get("rag", ""),
@@ -102,7 +111,8 @@ def replan_node(state: WorkflowState):
 
     return {
         "agent_calls": result.agent_calls or [],
-        "done": getattr(result, "done", False)
+        "done": getattr(result, "done", False),
+         "iterations": iterations
     }
 
 
@@ -157,12 +167,15 @@ def build_workflow_graph():
 
     graph.add_conditional_edges(
         "replan",
-        should_continue,
+        route_tools,
         {
-            "tools": "rag",
+            "rag": "rag",
+            "web": "web",
+            "memory": "memory",
+            "replan": "replan",
             "aggregator": "aggregator"
         }
-)
+    )
 
     graph.add_edge("aggregator", END)
 
