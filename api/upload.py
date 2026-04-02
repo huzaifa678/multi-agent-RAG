@@ -1,6 +1,6 @@
 import uuid
-from fastapi import APIRouter, File, HTTPException, UploadFile
-from mcp import os
+from fastapi import APIRouter, File , UploadFile
+import os
 from worker import process_document
 
 UPLOAD_DIR = "uploads"
