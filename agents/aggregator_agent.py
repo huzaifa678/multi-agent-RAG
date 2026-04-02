@@ -28,20 +28,20 @@ llm = ChatAnthropic(
 PLAN_PROMPT = ChatPromptTemplate.from_messages([
     ("system",
      """
-You are a STRICT ReAct planner.
+You are a STRICT JSON generator.
 
-You MUST select tools for any non-trivial query.
+You MUST output ONLY valid JSON matching this schema:
 
-TOOL RULES:
-- If query asks: what is, explain, how, why, define, tell me about → MUST use web or rag
-- Only allow empty tool usage for greetings, small talk, or simple math
+{
+  "agent_calls": ["rag" | "web" | "memory"]
+}
 
-TOOLS:
-- rag: internal knowledge base
-- web: external real-time knowledge
-- memory: user/session context
-
-Return structured output only.
+Rules:
+- NO markdown
+- NO explanation
+- NO text outside JSON
+- ONLY valid JSON
+- If unsure, return empty list
 """),
     ("human",
      """
