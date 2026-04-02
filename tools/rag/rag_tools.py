@@ -1,5 +1,3 @@
-import asyncio
-
 from tools.rag.client import rag_client
 
 async def retrieve_documents(query: str, top_k: int = 4):
