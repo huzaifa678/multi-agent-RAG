@@ -1,6 +1,4 @@
 from fastapi import APIRouter, File , UploadFile
-import os
-
 from langsmith import traceable
 from services.upload_service import handle_upload
 
