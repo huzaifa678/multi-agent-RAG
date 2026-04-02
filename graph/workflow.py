@@ -2,7 +2,6 @@ from typing import Dict, Any, List, TypedDict
 import json
 from langgraph.graph import StateGraph, START, END
 from langsmith import traceable
-from main import app_graph
 
 from agents.aggregator_agent import (
     build_short_term_memory,
@@ -15,7 +14,7 @@ from agents.aggregator_agent import (
 from agents.rag_agent import run_rag
 from agents.web_agent import run_web
 from agents.memory_agent import run_memory
-
+from core import runtime
 from memory.sqllite_memory import insert_long_term_memory
 
 
@@ -180,7 +179,7 @@ def build_workflow_graph():
 @traceable(name="langgraph_workflow")
 def execute_workflow(query: str, session_id: str) -> Dict[str, Any]:
 
-    state = app_graph.invoke({
+    state = runtime.app_graph.invoke({
         "query": query,
         "session_id": session_id
     })

@@ -1,5 +1,3 @@
-import json
-
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -14,11 +12,14 @@ from memory.sqllite_memory import (
     insert_long_term_memory
 )
 
+from schemas.plan import PlanSchema
+from schemas.replan import ReplanSchema
 from utils.config import Config
+
 
 llm = ChatAnthropic(
     api_key=Config.ANTHROPIC_API_KEY,
-    model="claude-3-5-sonnet-20241022",
+    model="claude-sonnet-4-6",
     temperature=0
 )
 
@@ -26,20 +27,20 @@ llm = ChatAnthropic(
 PLAN_PROMPT = ChatPromptTemplate.from_messages([
     ("system",
      """
-You are a ReAct planner.
+You are a STRICT ReAct planner.
 
-Return ONLY valid JSON:
+You MUST select tools for any non-trivial query.
 
-{
-  "thought": "reasoning",
-  "agent_calls": ["rag", "web", "memory"]
-}
+TOOL RULES:
+- If query asks: what is, explain, how, why, define, tell me about → MUST use web or rag
+- Only allow empty tool usage for greetings, small talk, or simple math
 
-Rules:
-- Use RAG for factual/internal data
-- Use Web for latest/current info
-- Use Memory for user/session context
-- Choose only necessary tools
+TOOLS:
+- rag: internal knowledge base
+- web: external real-time knowledge
+- memory: user/session context
+
+Return structured output only.
 """),
     ("human",
      """
@@ -53,27 +54,18 @@ Long-term memory:
 """)
 ])
 
-
-plan_chain = PLAN_PROMPT | llm | StrOutputParser()
-
+plan_chain = PLAN_PROMPT | llm.with_structured_output(PlanSchema)
 
 REPLAN_PROMPT = ChatPromptTemplate.from_messages([
     ("system",
      """
 You are a ReAct evaluator.
 
-Given tool results, decide if more tools are needed.
+Decide:
+1. Are we done?
+2. Do we need more tools?
 
-Return ONLY JSON:
-
-{
-  "thought": "...",
-  "agent_calls": []
-}
-
-Rules:
-- If info is sufficient → return empty agent_calls
-- If missing data → request additional tools
+Return structured output only.
 """),
     ("human",
      """
@@ -90,8 +82,7 @@ Memory:
 """)
 ])
 
-
-replan_chain = REPLAN_PROMPT | llm | StrOutputParser()
+replan_chain = REPLAN_PROMPT | llm.with_structured_output(ReplanSchema)
 
 
 FINAL_PROMPT = ChatPromptTemplate.from_messages([
@@ -99,15 +90,14 @@ FINAL_PROMPT = ChatPromptTemplate.from_messages([
      """
 You are a final reasoning agent.
 
-Combine all sources:
+Use ONLY provided sources:
 - RAG (highest priority)
 - Web
 - Memory
 
 Rules:
-- Resolve conflicts carefully
-- If missing info, say so
-- Do NOT expose reasoning
+- Never hallucinate missing facts
+- If info is missing, say so
 """),
     ("human",
      """
@@ -119,7 +109,7 @@ Short-term memory:
 Long-term memory:
 {long_memory}
 
-Memory Agent:
+Memory Tool Output:
 {memory}
 
 RAG:
@@ -130,7 +120,6 @@ Web:
 """)
 ])
 
-
 final_chain = FINAL_PROMPT | llm | StrOutputParser()
 
 
@@ -138,7 +127,6 @@ def build_short_term_memory(session_id: str, limit: int = 10):
     history = get_chat_history(session_id, limit)
     if not history:
         return "No short-term memory found."
-
     return "\n".join([f"{h['role']}: {h['content']}" for h in history])
 
 
@@ -146,18 +134,10 @@ def build_long_term_memory(session_id: str, limit: int = 20):
     history = get_long_term_memory(session_id, limit)
     if not history:
         return "No long-term memory found."
-
     return "\n".join([
         f"{h['source'] or 'unknown'}: {h['content']}"
         for h in history
     ])
-
-
-def parse_json(text: str):
-    try:
-        return json.loads(text)
-    except Exception:
-        return {"agent_calls": []}
 
 
 def execute_tools(query, session_id, agent_calls, prev_results=None):
@@ -179,37 +159,48 @@ def execute_tools(query, session_id, agent_calls, prev_results=None):
     return results
 
 
+def should_force_tools(query: str, results: dict) -> bool:
+    keywords = ["what is", "explain", "how", "why", "define", "tell me"]
+    if any(k in query.lower() for k in keywords):
+        if not results["rag"] and not results["web"]:
+            return True
+    return False
+
+
 def aggregate_response(query: str, session_id: str, max_steps: int = 2):
+
     short_memory = build_short_term_memory(session_id)
     long_memory = build_long_term_memory(session_id)
 
-    plan_raw = plan_chain.invoke({
+    plan_result = plan_chain.invoke({
         "query": query,
         "short_memory": short_memory,
         "long_memory": long_memory
     })
 
-    plan_data = parse_json(plan_raw)
-    agent_calls = plan_data.get("agent_calls", [])
-
-    results = execute_tools(query, session_id, agent_calls)
+    results = execute_tools(query, session_id, plan_result.agent_calls)
 
     for _ in range(max_steps - 1):
 
-        replan_raw = replan_chain.invoke({
+        replan_result = replan_chain.invoke({
             "query": query,
             "rag": results["rag"],
             "web": results["web"],
             "memory": results["memory"]
         })
 
-        replan_data = parse_json(replan_raw)
-        new_calls = replan_data.get("agent_calls", [])
+        results = execute_tools(
+            query,
+            session_id,
+            replan_result.agent_calls,
+            results
+        )
 
-        if not new_calls:
+        if getattr(replan_result, "done", False):
             break
 
-        results = execute_tools(query, session_id, new_calls, results)
+    if should_force_tools(query, results):
+        results["web"] = run_web(query)["content"]
 
     final_answer = final_chain.invoke({
         "query": query,
@@ -231,7 +222,7 @@ def aggregate_response(query: str, session_id: str, max_steps: int = 2):
         "content": final_answer,
         "source": "aggregator",
         "raw": {
-            "plan": plan_data,
+            "plan": plan_result.model_dump(),
             "results": results
         }
     }

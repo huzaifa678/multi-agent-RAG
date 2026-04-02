@@ -1,14 +1,16 @@
 from fastapi import APIRouter, HTTPException
 from langsmith import traceable
 from langsmith import traceable
+from schemas.chat import ChatRequest
 from services.chat_service import handle_chat
-from utils import logger
+from utils.logger import get_logger
 
 router = APIRouter()
+logger = get_logger("chat-api")
 
 @router.post("/chat")
 @traceable(name="chat_endpoint")
-async def chat(payload: dict):
+async def chat(payload: ChatRequest):
     try:
         logger.info(f"Incoming chat request: {payload}")
 

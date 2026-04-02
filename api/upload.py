@@ -1,8 +1,9 @@
 from fastapi import APIRouter, File, HTTPException , UploadFile
 from langsmith import traceable
 from services.upload_service import handle_upload
-from utils import logger
+from utils.logger import get_logger
 
+logger = get_logger("upload-api")
 router = APIRouter()
 
 @router.post("/upload-doc")

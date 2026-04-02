@@ -1,6 +1,5 @@
 from tools.memory.client import memory_client
 
-
 def save_message(session_id: str, role: str, content: str, model_used: str = None):
     return memory_client.call_tool(
         "save_message",

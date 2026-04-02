@@ -3,11 +3,13 @@ import os
 import asyncio
 from fastapi import HTTPException, UploadFile
 from langsmith import traceable
-from utils import logger
+from utils.logger import get_logger
 from worker import process_document
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+logger = get_logger("upload-service")
 
 @traceable(name="upload_service")
 async def handle_upload(file: UploadFile):
