@@ -46,30 +46,52 @@ def planner_node(state: WorkflowState):
         "long_memory": long_memory
     })
 
+    agent_calls = plan_result.agent_calls or []
+
+    confidence = {
+        "rag": 0.7,
+        "web": 0.9,
+        "memory": 0.3
+    }
+
     return {
         "short_memory": short_memory,
         "long_memory": long_memory,
-        "agent_calls": plan_result.agent_calls or [],
-        "executed_calls": []
+        "agent_calls": agent_calls,
+        "executed_calls": [],
+        "confidence": confidence
     }
 
 
 def route_tools(state: WorkflowState):
-    if state.get("done"):
-        return "aggregator"
 
     calls = state.get("agent_calls", [])
     executed = state.get("executed_calls", [])
+    confidence = state.get("confidence", {})
 
-    for call in calls:
-        if call not in executed:
-            return call
+    best_tool = None
+    best_score = -1
 
-    return "aggregator" 
+    if "rag" in calls and "web" in executed:
+        if "not found" in state.get("rag", "").lower():
+            return "rag"
+
+    for c in calls:
+        if c not in executed:
+            score = confidence.get(c, 0.5)
+            if score > best_score:
+                best_score = score
+                best_tool = c
+
+    if best_tool:
+        return best_tool
+
+    return "aggregator"
 
 
 async def rag_node(state: WorkflowState):
-    result = await run_rag(state["query"])
+    web_data = state.get("web") 
+    result = await run_rag(state["query"], web_data)
 
     executed = state.get("executed_calls", []) + ["rag"]
 
@@ -102,7 +124,7 @@ async def memory_node(state: WorkflowState):
 
 
 def replan_node(state: WorkflowState):
-    
+
     result = replan_chain.invoke({
         "query": state["query"],
         "rag": state.get("rag", ""),

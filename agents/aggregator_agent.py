@@ -66,6 +66,13 @@ Decide:
 1. Are we done?
 2. Do we need more tools?
 
+RULES:
+- Only mark 'done': true when you have sufficient information to answer the query.
+
+STRATEGY:
+1. If RAG says "not found" but Web has the answer, you MUST call "rag" again. 
+   This triggers the RAG agent to save the Web info into the database.
+
 Return structured output only.
 """),
     ("human",
@@ -141,89 +148,76 @@ def build_long_term_memory(session_id: str, limit: int = 20):
     ])
 
 
-def execute_tools(query, session_id, agent_calls, prev_results=None):
-    results = prev_results or {
-        "rag": "",
-        "web": "",
-        "memory": ""
-    }
+def execute_tools(query, session_id, agent_calls):
+    results = results or {"rag": None, "web": None, "memory": None}
 
     if "rag" in agent_calls and not results["rag"]:
-        results["rag"] = run_rag(query)["content"]
+        results["rag"] = run_rag(query)
 
     if "web" in agent_calls and not results["web"]:
-        results["web"] = run_web(query)["content"]
+        results["web"] = run_web(query)
 
     if "memory" in agent_calls and not results["memory"]:
-        results["memory"] = run_memory(session_id)["content"]
+        results["memory"] = run_memory(session_id)
 
     return results
 
+def rag_failed(rag_output: str) -> bool:
+    return (
+        not rag_output
+        or "not found" in rag_output.lower()
+        or "no relevant" in rag_output.lower()
+    )
 
-def should_force_tools(query: str, results: dict) -> bool:
-    keywords = ["what is", "explain", "how", "why", "define", "tell me"]
-    if any(k in query.lower() for k in keywords):
-        if not results["rag"] and not results["web"]:
-            return True
-    return False
+
+def web_has_answer(web_output: str) -> bool:
+    return bool(web_output and "no relevant" not in web_output.lower())
 
 
-def aggregate_response(query: str, session_id: str, max_steps: int = 2):
+def should_force_web(query: str, results: dict) -> bool:
+    keywords = ["what", "how", "why", "explain", "define"]
+    return any(k in query.lower() for k in keywords) and not results["web"]
 
-    short_memory = build_short_term_memory(session_id)
-    long_memory = build_long_term_memory(session_id)
 
-    plan_result = plan_chain.invoke({
-        "query": query,
-        "short_memory": short_memory,
-        "long_memory": long_memory
-    })
 
-    results = execute_tools(query, session_id, plan_result.agent_calls)
+async def aggregate_response(query: str, session_id: str, max_steps: int = 3):
+
+    short_memory = get_chat_history(session_id)
+    long_memory = get_long_term_memory(session_id)
+
+    plan = ["rag", "web"]  
+
+    results = execute_tools(query, session_id, plan)
 
     for _ in range(max_steps - 1):
 
-        replan_result = replan_chain.invoke({
-            "query": query,
-            "rag": results["rag"],
-            "web": results["web"],
-            "memory": results["memory"]
-        })
+        rag_state = results["rag"]
+        web_state = results["web"]
 
-        results = execute_tools(
-            query,
-            session_id,
-            replan_result.agent_calls,
-            results
-        )
+        if rag_failed(rag_state) and web_has_answer(web_state):
 
-        if getattr(replan_result, "done", False):
+            results["rag"] = await run_rag(
+                query,
+                web_context=web_state["content"]
+            )
+
+        if (rag_state and rag_state.get("found")) or web_state:
             break
-
-    if should_force_tools(query, results):
-        results["web"] = run_web(query)["content"]
 
     final_answer = final_chain.invoke({
         "query": query,
-        "short_memory": short_memory,
-        "long_memory": long_memory,
-        "memory": results["memory"] or "No relevant memory found.",
-        "rag": results["rag"] or "No relevant RAG content found.",
-        "web": results["web"] or "No relevant Web content found."
+        "memory": short_memory,
+        "rag": results["rag"]["content"] if results["rag"] else "",
+        "web": results["web"]["content"] if results["web"] else ""
     })
 
-    if final_answer:
-        insert_long_term_memory(
-            session_id,
-            f"[react] Q: {query} | A: {final_answer[:1000]}",
-            source="aggregator"
-        )
+    insert_long_term_memory(
+        session_id,
+        f"[hybrid] Q: {query} | A: {final_answer[:1000]}",
+        source="hybrid"
+    )
 
     return {
         "content": final_answer,
-        "source": "aggregator",
-        "raw": {
-            "plan": plan_result.model_dump(),
-            "results": results
-        }
+        "raw": results
     }
