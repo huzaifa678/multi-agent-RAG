@@ -62,13 +62,13 @@ def route_tools(state: WorkflowState):
 
     routes = []
     if "rag" in calls:
-        routes.append("rag")
+        return "rag"
     if "web" in calls:
-        routes.append("web")
+        return "web"
     if "memory" in calls:
-        routes.append("memory")
+        return "memory"
 
-    return routes if routes else ["replan"]
+    return "replan"
 
 
 def rag_node(state: WorkflowState):
