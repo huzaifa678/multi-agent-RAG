@@ -75,18 +75,21 @@ async def rag_node(state: WorkflowState):
     return {"rag": result["content"]}
 
 
-def web_node(state: WorkflowState):
+async def web_node(state: WorkflowState):
     if state.get("web"):
         return {}
     
-    return {"web": run_web(state["query"])["content"]}
+    result = await run_web(state["query"])
+    
+    return {"web": await result["content"]}
 
-
-def memory_node(state: WorkflowState):
+async def memory_node(state: WorkflowState):
     if state.get("memory"):
         return {}
     
-    return {"memory": run_memory(state["session_id"])["content"]}
+    result = await run_memory(state["session_id"])
+    
+    return {"memory": result["content"]}
 
 
 def replan_node(state: WorkflowState):
