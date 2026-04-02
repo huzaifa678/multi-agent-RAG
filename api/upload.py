@@ -1,11 +1,12 @@
 import uuid
-from fastapi import File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from mcp import os
-import router
 from worker import process_document
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+router = APIRouter()
 
 import asyncio
 
