@@ -24,10 +24,10 @@ WEB_PROMPT = ChatPromptTemplate.from_messages([
 web_chain = WEB_PROMPT | llm | StrOutputParser()
 
 
-def run_web(query: str):
-    results = search_web(query)
+async def run_web(query: str):
+    results = await search_web(query)
 
-    summary = web_chain.invoke({
+    summary = await web_chain.invoke({
         "query": query,
         "results": results
     })

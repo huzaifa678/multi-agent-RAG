@@ -24,10 +24,10 @@ MEMORY_PROMPT = ChatPromptTemplate.from_messages([
 memory_chain = MEMORY_PROMPT | llm | StrOutputParser()
 
 
-def run_memory(session_id: str):
-    history = get_history(session_id)
+async def run_memory(session_id: str):
+    history = await get_history(session_id)
 
-    summary = memory_chain.invoke({
+    summary = await memory_chain.invoke({
         "history": history
     })
 
