@@ -8,7 +8,7 @@ async def handle_chat(payload: dict):
     query = payload["query"]
     session_id = payload["session_id"]
 
-    rewritten_query = contextualize({
+    rewritten_query = await contextualize({
         "input": query,
         "history": payload.get("history", [])
     })

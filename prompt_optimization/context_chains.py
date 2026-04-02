@@ -1,6 +1,6 @@
+import asyncio
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
-
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from utils.config import Config
@@ -39,21 +39,29 @@ openai = ChatOpenAI(
     api_key=Config.OPENAI_API_KEY
 )
 
-
 def build_chain(llm):
     return PROMPT | llm | StrOutputParser()
 
+groq_chain = build_chain(groq)
+openai_chain = build_chain(openai)
 
-def contextualize(state: dict) -> str:
+async def contextualize(state: dict) -> str:
     history = state.get("history", [])
 
     try:
-        return build_chain(groq).invoke({
-            "input": state["input"],
-            "history": history
-        })
+        return await asyncio.to_thread(
+            groq_chain.invoke,
+            {
+                "input": state["input"],
+                "history": history
+            }
+        )
+
     except Exception:
-        return build_chain(openai).invoke({
-            "input": state["input"],
-            "history": history
-        })
+        return await asyncio.to_thread(
+            openai_chain.invoke,
+            {
+                "input": state["input"],
+                "history": history
+            }
+        )
