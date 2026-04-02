@@ -14,6 +14,7 @@ from agents.aggregator_agent import (
 from agents.rag_agent import run_rag
 from agents.web_agent import run_web
 from agents.memory_agent import run_memory
+from asyncio import graph
 from core import runtime
 from memory.sqllite_memory import insert_long_term_memory
 
@@ -124,6 +125,10 @@ def aggregator_node(state: WorkflowState):
         "final_response": final_answer
     }
 
+def should_continue(state: WorkflowState):
+    if state.get("done"):
+        return "aggregator"
+    return "tools"
 
 def build_workflow_graph():
     graph = StateGraph(WorkflowState)
@@ -139,33 +144,23 @@ def build_workflow_graph():
 
     graph.add_conditional_edges(
         "planner",
-        route_tools,
-        {
-            "rag": "rag",
-            "web": "web",
-            "memory": "memory",
-            "replan": "replan"
-        }
+        lambda s: "tools",
+        {"tools": "rag", "replan": "replan"}
     )
 
     graph.add_edge("rag", "replan")
     graph.add_edge("web", "replan")
     graph.add_edge("memory", "replan")
 
+
     graph.add_conditional_edges(
         "replan",
-        route_tools,
+        should_continue,
         {
-            "rag": "rag",
-            "web": "web",
-            "memory": "memory",
-            "replan": "aggregator" 
+            "tools": "rag",
+            "aggregator": "aggregator"
         }
-    )
-
-    graph.add_edge("rag", "aggregator")
-    graph.add_edge("web", "aggregator")
-    graph.add_edge("memory", "aggregator")
+)
 
     graph.add_edge("aggregator", END)
 
