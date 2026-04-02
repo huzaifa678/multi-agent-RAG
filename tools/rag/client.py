@@ -7,7 +7,7 @@ async def get_rag_client():
     global rag_client
 
     if rag_client is None:
-        rag_client = Client("http://localhost:8001")
+        rag_client = Client("http://localhost:8001/mcp")
         await rag_client.__aenter__()
 
     return rag_client
