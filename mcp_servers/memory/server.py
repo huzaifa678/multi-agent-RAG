@@ -6,6 +6,7 @@ from memory.sqllite_memory import (
 
 mcp = FastMCP("memory-mcp-server")
 
+app = mcp.http_app
 
 @mcp.tool()
 def save_message(session_id: str, role: str, content: str, model_used: str = None):

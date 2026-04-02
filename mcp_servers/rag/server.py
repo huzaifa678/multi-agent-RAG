@@ -5,6 +5,7 @@ from rag.retriever import retrieve_context as retrieve_documents
 
 mcp = FastMCP("rag-mcp-server")
 
+app = mcp.http_app
 
 @mcp.tool()
 def add_documents_tool(docs: list):
