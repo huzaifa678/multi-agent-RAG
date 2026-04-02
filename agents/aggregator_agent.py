@@ -183,7 +183,6 @@ def should_force_web(query: str, results: dict) -> bool:
 async def aggregate_response(query: str, session_id: str, max_steps: int = 3):
 
     short_memory = get_chat_history(session_id)
-    long_memory = get_long_term_memory(session_id)
 
     plan = ["rag", "web"]  
 
