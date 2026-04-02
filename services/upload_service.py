@@ -2,11 +2,13 @@ import uuid
 import os
 import asyncio
 from fastapi import UploadFile
+from langsmith import traceable
 from worker import process_document
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+@traceable(name="upload_service")
 async def handle_upload(file: UploadFile):
 
     content = await file.read()

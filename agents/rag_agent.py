@@ -1,6 +1,7 @@
 from langchain_groq import ChatGroq
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
+from langsmith import traceable
 
 from tools.rag.rag_tools import retrieve_documents
 from utils.config import Config
@@ -24,6 +25,7 @@ RAG_PROMPT = ChatPromptTemplate.from_messages([
 rag_chain = RAG_PROMPT | llm | StrOutputParser()
 
 
+@traceable(name="rag_retrieval")
 def run_rag(query: str):
     docs = retrieve_documents(query)
 

@@ -1,4 +1,5 @@
 from fastmcp import FastMCP
+from langsmith import traceable
 from rag.add_documents import add_documents
 from rag.retriever import retrieve_context as retrieve_documents
 
@@ -13,6 +14,7 @@ def add_documents_tool(docs: list):
     return add_documents(docs)
 
 @mcp.tool()
+@traceable(name="mcp_rag_tool")
 def retrieve_documents_tool(query: str, top_k: int = 5):
     """
     Retrieve relevant documents from vectorstore

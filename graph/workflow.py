@@ -1,6 +1,7 @@
 from typing import Dict, Any, List, TypedDict
 import json
 from langgraph.graph import StateGraph, START, END
+from langsmith import traceable
 from main import app_graph
 
 from agents.aggregator_agent import (
@@ -176,6 +177,7 @@ def build_workflow_graph():
     return graph.compile()
 
 
+@traceable(name="langgraph_workflow")
 def execute_workflow(query: str, session_id: str) -> Dict[str, Any]:
 
     state = app_graph.invoke({
