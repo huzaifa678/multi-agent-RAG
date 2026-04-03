@@ -1,4 +1,7 @@
 from fastmcp import Client
+import os
+
+rag_url = os.getenv("MCP_RAG_URL")
 
 rag_client: Client | None = None
 
@@ -6,7 +9,7 @@ async def get_rag_client():
     global rag_client
 
     if rag_client is None:
-        rag_client = Client("http://localhost:8001/mcp")
+        rag_client = Client(rag_url)
         await rag_client.__aenter__()
 
     return rag_client

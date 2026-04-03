@@ -1,12 +1,15 @@
+import os
 from fastmcp import Client
 
 memory_client: Client | None = None
+
+memory_url = os.getenv("MCP_MEMORY_URL")
 
 async def get_memory_client():
     global memory_client
 
     if memory_client is None:
-        memory_client = Client("http://localhost:8002/mcp")
+        memory_client = Client(memory_url)
         await memory_client.__aenter__()
 
     return memory_client
