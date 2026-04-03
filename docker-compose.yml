@@ -9,9 +9,9 @@ services:
     networks:
       - app-net
     environment:
-      MCP_RAG_URL: http://mcp-rag:8001
-      MCP_WEB_URL: http://mcp-web:8002
-      MCP_MEMORY_URL: http://mcp-memory:8003
+      MCP_RAG_URL: http://mcp-rag:8001/mcp
+      MCP_WEB_URL: http://mcp-web:8002/mcp
+      MCP_MEMORY_URL: http://mcp-memory:8003/mcp
     develop:
       watch:
         - action: sync
