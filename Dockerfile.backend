@@ -20,6 +20,7 @@ COPY web /app/web
 COPY memory /app/memory
 COPY prompt_optimization /app/prompt_optimization
 COPY worker.py /app/worker.py
+COPY .env /app/.env
 
 EXPOSE 8000
 
