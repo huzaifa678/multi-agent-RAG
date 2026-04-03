@@ -10,4 +10,4 @@ COPY mcp_servers/rag /app/mcp_servers/rag
 
 EXPOSE 8001
 
-CMD ["uvicorn", "mcp_servers.rag.server:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "mcp_servers.rag.server:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]

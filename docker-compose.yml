@@ -7,6 +7,11 @@ services:
       - "8000:8000"
     networks:
       - app-net
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
 
   
   mcp-rag:
@@ -17,6 +22,11 @@ services:
       - "8001:8001"
     networks:
       - app-net
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
 
   mcp-web:
     build:
@@ -26,6 +36,11 @@ services:
       - "8002:8002"
     networks:
       - app-net
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
 
   mcp-memory:
     build:
@@ -35,6 +50,11 @@ services:
       - "8003:8003"
     networks:
       - app-net
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
 
 networks:
   app-net:
