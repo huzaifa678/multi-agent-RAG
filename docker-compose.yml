@@ -1,5 +1,6 @@
 services:
   backend:
+    container_name: backend
     image: backend:v1
     build:
       context: .
@@ -20,6 +21,7 @@ services:
 
   
   mcp-rag:
+    container_name: mcp-rag
     image: mcp-rag:v1
     build:
       context: .
@@ -35,6 +37,7 @@ services:
           target: /app
 
   mcp-web:
+    container_name: mcp-web
     image: mcp-web:v1
     build:
       context: .
@@ -49,7 +52,9 @@ services:
           path: .
           target: /app
 
+
   mcp-memory:
+    container_name: mcp-memory
     image: mcp-memory:v1
     build:
       context: .
