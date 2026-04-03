@@ -189,7 +189,7 @@ async def aggregate_response(query: str, session_id: str, max_steps: int = 3):
 
     short_memory = get_chat_history(session_id)
 
-    plan = ["rag", "web"]  
+    plan = ["rag", "web", "memory"]  
 
     results = execute_tools(query, session_id, plan)
 
