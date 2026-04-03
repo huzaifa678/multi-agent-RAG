@@ -15,8 +15,6 @@ docx2txt
 python-multipart
 pypdf
 
-python-dotenv
-
 pillow
 pymupdf
 
