@@ -17,7 +17,7 @@ services:
   mcp-rag:
     build:
       context: .
-      dockerfile: Dockerfile.mcp-rag
+      dockerfile: Dockerfile.rag
     ports:
       - "8001:8001"
     networks:
@@ -31,7 +31,7 @@ services:
   mcp-web:
     build:
       context: .
-      dockerfile: Dockerfile.mcp-web
+      dockerfile: Dockerfile.web
     ports:
       - "8002:8002"
     networks:
@@ -45,7 +45,7 @@ services:
   mcp-memory:
     build:
       context: .
-      dockerfile: Dockerfile.mcp-memory
+      dockerfile: Dockerfile.memory
     ports:
       - "8003:8003"
     networks:
