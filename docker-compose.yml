@@ -1,5 +1,6 @@
 services:
   backend:
+    image: backend:v1
     build:
       context: .
       dockerfile: Dockerfile.backend
@@ -15,6 +16,7 @@ services:
 
   
   mcp-rag:
+    image: mcp-rag:v1
     build:
       context: .
       dockerfile: Dockerfile.rag
@@ -29,6 +31,7 @@ services:
           target: /app
 
   mcp-web:
+    image: mcp-web:v1
     build:
       context: .
       dockerfile: Dockerfile.web
@@ -43,6 +46,7 @@ services:
           target: /app
 
   mcp-memory:
+    image: mcp-memory:v1
     build:
       context: .
       dockerfile: Dockerfile.memory
