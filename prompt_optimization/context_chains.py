@@ -5,7 +5,6 @@ from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from utils.config import Config
 
-
 SYSTEM = """
 You are a query decomposition engine for an AI agent system.
 

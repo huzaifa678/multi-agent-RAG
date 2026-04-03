@@ -2,7 +2,6 @@ from fastmcp import Client
 
 rag_client: Client | None = None
 
-
 async def get_rag_client():
     global rag_client
 

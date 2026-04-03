@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 
 class AgentCall(BaseModel):
     tool: str = Field(description="The tool to call: 'rag', 'web', or 'memory'")

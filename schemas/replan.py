@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Literal
 
-
 class ReplanSchema(BaseModel):
     reasoning: str = Field(
         ...,

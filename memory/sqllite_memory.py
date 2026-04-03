@@ -3,12 +3,10 @@ from sqlite3 import Connection
 
 DB_NAME = "app.db"
 
-
 def get_db_connection() -> Connection:
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     return conn
-
 
 def create_long_term_memory():
     conn = get_db_connection()

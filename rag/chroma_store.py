@@ -4,7 +4,6 @@ from pymupdf import Document
 from utils.config import Config
 from utils.text import chunk_text
 
-
 embedding_function = OpenAIEmbeddings(
     openai_api_key=Config.OPENAI_API_KEY
 )
@@ -26,6 +25,7 @@ async def write_to_chroma(query: str, content: str):
     chunks = chunk_text().split_documents([doc])
 
     texts = [c.page_content for c in chunks]
-    metadatas = [c.metadata for c in chunks]
 
+    metadatas = [c.metadata for c in chunks]
+    
     vectorstore.add_texts(texts=texts, metadatas=metadatas)
