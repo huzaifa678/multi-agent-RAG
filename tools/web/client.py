@@ -1,16 +1,14 @@
-import os
-
 from fastmcp import Client
+from utils.config import MCP_WEB_URL
 
 web_client: Client | None = None
 
-web_url = os.getenv("MCP_WEB_URL")
 
 async def get_web_client():
     global web_client
 
     if web_client is None:
-        web_client = Client(web_url)
+        web_client = Client(MCP_WEB_URL)
         await web_client.__aenter__()
 
     return web_client

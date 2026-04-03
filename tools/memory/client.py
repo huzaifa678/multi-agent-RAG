@@ -1,15 +1,13 @@
-import os
 from fastmcp import Client
+from utils.config import MCP_MEMORY_URL
 
 memory_client: Client | None = None
-
-memory_url = os.getenv("MCP_MEMORY_URL")
 
 async def get_memory_client():
     global memory_client
 
     if memory_client is None:
-        memory_client = Client(memory_url)
+        memory_client = Client(MCP_MEMORY_URL)
         await memory_client.__aenter__()
 
     return memory_client
