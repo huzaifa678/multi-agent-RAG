@@ -1,0 +1,41 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    networks:
+      - app-net
+
+  
+  mcp-rag:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-rag
+    ports:
+      - "8001:8001"
+    networks:
+      - app-net
+
+  mcp-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-web
+    ports:
+      - "8002:8002"
+    networks:
+      - app-net
+
+  mcp-memory:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-memory
+    ports:
+      - "8003:8003"
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
