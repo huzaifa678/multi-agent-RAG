@@ -197,6 +197,7 @@ async def aggregate_response(query: str, session_id: str, max_steps: int = 3):
 
         rag_state = results["rag"]
         web_state = results["web"]
+        memory_state = results["memory"]
 
         if rag_failed(rag_state) and web_has_answer(web_state):
 
@@ -212,7 +213,8 @@ async def aggregate_response(query: str, session_id: str, max_steps: int = 3):
         "query": query,
         "memory": short_memory,
         "rag": results["rag"]["content"] if results["rag"] else "",
-        "web": results["web"]["content"] if results["web"] else ""
+        "web": results["web"]["content"] if results["web"] else "",
+        "memory": results["memory"]["content"] if results["memory"] else ""
     })
 
     insert_long_term_memory(
