@@ -8,6 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY mcp_servers/memory /app/mcp_servers/memory
 COPY utils /app/utils
+COPY memory /app/memory
 
 EXPOSE 8003
 
