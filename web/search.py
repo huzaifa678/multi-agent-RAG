@@ -1,11 +1,8 @@
 from typing import List, TypedDict, Any
-
 from langchain_tavily import TavilySearch
 from langchain_community.retrievers.wikipedia import WikipediaRetriever
 from langchain_community.utilities.wikipedia import WikipediaAPIWrapper
-
 from utils.config import Config
-
 
 tavily = TavilySearch(
     max_results=5,
@@ -13,14 +10,12 @@ tavily = TavilySearch(
     api_key=Config.TAVILY_API_KEY
 )
 
-
 wiki_retriever = WikipediaRetriever(
     api_wrapper=WikipediaAPIWrapper(
         top_k_results=2,
         doc_content_chars_max=2000
     )
 )
-
 
 class SearchResult(TypedDict):
     source: str
