@@ -8,8 +8,8 @@ langgraph>=0.2.0
 langsmith>=0.1.0
 langchain-groq
 langchain-openai
-langchain_chroma
-langchain_tavily
+langchain-chroma
+langchain-tavily
 
 docx2txt
 python-multipart
@@ -19,14 +19,12 @@ python-dotenv
 
 pillow
 pymupdf
-faiss-cpu
 
 openai>=1.40.0
 tiktoken>=0.7.0
 
 mcp>=1.0.0
 
-faiss-cpu>=1.8.0
 chromadb>=0.5.0
 qdrant-client>=1.9.0
 
@@ -35,8 +33,6 @@ sentence-transformers>=3.0.0
 sqlalchemy
 
 requests>=2.32.0
-httpx>=0.27.0
-beautifulsoup4>=4.12.0
 tavily-python>=0.5.0
 
 fastapi>=0.112.0
@@ -45,20 +41,13 @@ fastmcp>=0.1.0
 
 wikipedia
 langchain-anthropic>=0.3.0
+
 torch==2.3.1
-transformers==4.44.2
-accelerate
 
 pydantic>=2.7.0
-numpy>=1.26.0
-pandas>=2.2.0
 
 aiohttp>=3.9.0
 asyncio
-
-loguru>=0.7.0
-opentelemetry-api>=1.25.0
-opentelemetry-sdk>=1.25.0
 
 tenacity>=8.3.0
 python-dotenv>=1.0.0

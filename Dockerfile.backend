@@ -1,0 +1,25 @@
+# Dockerfile for FastAPI backend
+FROM base:v1
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+COPY main.py /app/main.py
+COPY api /app/api
+COPY core /app/core
+COPY graph /app/graph
+COPY agents /app/agents
+COPY services /app/services
+COPY rag /app/rag
+COPY schemas /app/schemas
+COPY tools /app/tools
+COPY utils /app/utils
+COPY web /app/web
+COPY memory /app/memory
+COPY prompt_optimization /app/prompt_optimization
+
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
