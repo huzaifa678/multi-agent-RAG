@@ -33,7 +33,12 @@ You are a STRICT JSON generator.
 You MUST output ONLY valid JSON matching this schema:
 
 {{
-  "agent_calls": ["rag" | "web" | "memory"]
+  "agent_calls": ["rag", "web", "memory"],
+  "confidence": {{
+      "rag": float,
+      "web": float,
+      "memory": float
+  }}
 }}
 
 Rules:
@@ -41,7 +46,9 @@ Rules:
 - NO explanation
 - NO text outside JSON
 - ONLY valid JSON
-- If unsure, return empty list
+- "confidence": A score from 0.0 to 1.0 for EVERY tool listed in agent_calls. 
+- Higher confidence (0.8+) for tools directly matching the query type (e.g., 'memory' for personal history, 'web' for news).
+- If unsure, return empty list for agent_calls and 0.0 for confidence.
 """),
     ("human",
      """

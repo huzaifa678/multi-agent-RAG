@@ -26,6 +26,7 @@ class WorkflowState(TypedDict, total=False):
 
     agent_calls: List[str]
     executed_calls: List[str]
+    confidence: Dict[str, float] 
 
     rag: str
     web: str
@@ -46,20 +47,18 @@ def planner_node(state: WorkflowState):
         "long_memory": long_memory
     })
 
-    agent_calls = plan_result.agent_calls or []
-
-    confidence = {
-        "rag": 0.7,
-        "web": 0.9,
-        "memory": 0.3
+    dynamic_confidence = {
+        call.tool: call.confidence for call in plan_result.agent_calls
     }
+
+    tool_names = [call.tool for call in plan_result.agent_calls]
 
     return {
         "short_memory": short_memory,
         "long_memory": long_memory,
-        "agent_calls": agent_calls,
+        "agent_calls": tool_names,
         "executed_calls": [],
-        "confidence": confidence
+        "confidence": dynamic_confidence
     }
 
 
