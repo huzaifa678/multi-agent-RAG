@@ -1,5 +1,3 @@
-import asyncio
-import signal
 from tools.rag.client import close_rag_client, get_rag_client
 from tools.web.client import close_web_client, get_web_client
 from utils.logger import get_logger
