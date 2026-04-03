@@ -1,7 +1,6 @@
 import uuid
 import os
-import asyncio
-from fastapi import HTTPException, UploadFile
+from fastapi import BackgroundTasks, HTTPException, UploadFile
 from langsmith import traceable
 from utils.logger import get_logger
 from worker import process_document
@@ -12,7 +11,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 logger = get_logger("upload-service")
 
 @traceable(name="upload_service")
-async def handle_upload(file: UploadFile):
+async def handle_upload(file: UploadFile, background_tasks: BackgroundTasks):
     try:
         logger.info(f"Upload started | filename={file.filename}")
 
@@ -27,10 +26,7 @@ async def handle_upload(file: UploadFile):
         logger.info(f"File saved locally | file_id={file_id} | path={file_path}")
 
         # background ingestion
-        task = asyncio.create_task(process_document(file_id, file_path))
-        task.add_done_callback(
-            lambda t: logger.info(f"Document processing finished | file_id={file_id}")
-        )
+        background_tasks.add_task(process_document, file_id, file_path)
 
         logger.info(f"Background ingestion started | file_id={file_id}")
 

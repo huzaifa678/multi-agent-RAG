@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, HTTPException , UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException , UploadFile
 from langsmith import traceable
 from services.upload_service import handle_upload
 from utils.logger import get_logger
@@ -8,11 +8,11 @@ router = APIRouter()
 
 @router.post("/upload-doc")
 @traceable(name="upload_doc_endpoint")
-async def upload_doc(file: UploadFile = File(...)):
+async def upload_doc(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     try:
         logger.info(f"Upload request received: filename={file.filename}, content_type={file.content_type}")
 
-        result = await handle_upload(file)
+        result = await handle_upload(file,  background_tasks)
 
         logger.info(f"Upload successful: filename={file.filename}")
         return result

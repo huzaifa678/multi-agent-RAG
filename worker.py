@@ -1,7 +1,7 @@
 from utils.text import chunk_text, extract_text
 from rag.chroma_store import vectorstore
 
-def process_document(file_id: str, file_path: str):
+async def process_document(file_id: str, file_path: str):
     text = extract_text(file_path)
     chunks = chunk_text(text)
 
