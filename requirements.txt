@@ -45,8 +45,8 @@ fastmcp>=0.1.0
 
 wikipedia
 langchain-anthropic>=0.3.0
-transformers 
-torch 
+torch==2.3.1
+transformers==4.44.2
 accelerate
 
 pydantic>=2.7.0
