@@ -1,3 +1,4 @@
+import chromadb
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 from pymupdf import Document
@@ -8,10 +9,22 @@ embedding_function = OpenAIEmbeddings(
     openai_api_key=Config.OPENAI_API_KEY
 )
 
-vectorstore = Chroma(
-    persist_directory=Config.CHROMA_PATH,
-    embedding_function=embedding_function
-)
+if Config.ENVIRONMENT == "docker":
+    client = chromadb.HttpClient(
+        host=Config.CHROMA_HOST,
+        port=int(Config.CHROMA_PORT)
+    )
+
+    vectorstore = Chroma(
+        client=client,
+        collection_name=Config.COLLECTION_NAME,
+        embedding_function=embedding_function
+    )
+else:
+    vectorstore = Chroma(
+        persist_directory=Config.CHROMA_PATH,
+        embedding_function=embedding_function
+    )
 
 async def write_to_chroma(query: str, content: str):
     doc = Document(

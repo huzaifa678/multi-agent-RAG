@@ -5,6 +5,8 @@ load_dotenv()
 
 class Config:
     CHROMA_PATH = os.getenv("CHROMA_PATH")
+    CHROMA_HOST = os.getenv("CHROMA_HOST")
+    CHROMA_PORT = os.getenv("CHROMA_PORT")
     COLLECTION_NAME = os.getenv("COLLECTION_NAME")
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
@@ -16,3 +18,4 @@ class Config:
     MCP_RAG_URL = os.getenv("MCP_RAG_URL")
     MCP_WEB_URL = os.getenv("MCP_WEB_URL")
     MCP_MEMORY_URL = os.getenv("MCP_MEMORY_URL")
+    ENVIRONMENT = os.getenv("ENVIRONMENT")
