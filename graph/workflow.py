@@ -85,7 +85,7 @@ def route_tools(state: WorkflowState):
     if "web" in executed and "memory" not in executed and "memory" in calls:
         return "memory"
     
-    if "memory" not in calls and "memory" not in executed:
+    if "memory" not in executed:
         return "memory"
 
     for c in calls:
@@ -136,7 +136,7 @@ async def memory_node(state: WorkflowState):
 
 
 def replan_node(state: WorkflowState):
-    
+
     existing_calls = state.get("agent_calls", [])
     
     result = replan_chain.invoke({
