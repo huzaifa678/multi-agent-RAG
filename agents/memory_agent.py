@@ -4,6 +4,9 @@ from langchain_openai import ChatOpenAI
 from utils.config import Config
 from tools.memory.memory_tools import get_history
 from tools.memory.memory_tools import save_message
+from utils.logger import get_logger
+
+logger = get_logger()
 
 llm = ChatOpenAI(
     api_key=Config.OPENAI_API_KEY,
@@ -34,10 +37,12 @@ async def run_memory(session_id: str):
     history_list = []
 
     if hasattr(raw, "data") and isinstance(raw.data, dict):
+        logger.info("The attribute is data")
         history_list = raw.data.get("structured_content") or []
 
 
     if not history_list or not isinstance(history_list, list):
+        logger.warning("No content to use the memory is empty")
         return {"content": "NO_MEMORY", "source": "memory", "raw": ""}
 
     valid_items = [h for h in history_list if isinstance(h, dict) and h.get("content")]
