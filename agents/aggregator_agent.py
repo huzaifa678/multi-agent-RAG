@@ -287,6 +287,5 @@ async def aggregate_response(query: str, session_id: str, max_steps: int = 3):
     )
 
     return {
-        "content": final_answer,
-        "raw": results
+        "content": final_answer
     }
