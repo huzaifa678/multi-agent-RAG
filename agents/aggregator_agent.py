@@ -48,6 +48,17 @@ Rules:
 - "confidence": A score from 0.0 to 1.0 for EVERY tool listed in agent_calls. 
 - Higher confidence (0.8+) for tools directly matching the query type (e.g., 'memory' for personal history, 'web' for news).
 - If unsure, return empty list for agent_calls and 0.0 for confidence.
+
+IMPORTANT RULE:
+- ALWAYS include "memory" in agent_calls (it is mandatory for every query)
+- Set confidence["memory"] >= 0.7 unless session_id is empty or invalid
+
+Reason:
+Memory is required to personalize and improve response quality.
+
+If unsure:
+- still include "memory"
+- just lower confidence (0.3–0.6)
 """),
     ("human",
      """
