@@ -16,10 +16,13 @@ async def save_message(session_id: str, role: str, content: str, model_used: Opt
 
 async def get_history(session_id: str, limit: int = 10):
     memory_client = await get_memory_client()
-    return await memory_client.call_tool(
+
+    result = await memory_client.call_tool(
         "get_history",
         {
             "session_id": session_id,
             "limit": limit
         }
     )
+
+    return result

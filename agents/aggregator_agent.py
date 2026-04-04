@@ -8,7 +8,8 @@ from agents.memory_agent import run_memory
 from memory.sqllite_memory import (
     get_chat_history,
     get_long_term_memory,
-    insert_long_term_memory
+    insert_long_term_memory,
+    insert_message
 )
 
 from schemas.plan import PlanSchema
@@ -22,7 +23,6 @@ llm = ChatAnthropic(
     temperature=0,
     max_tokens=1024,
 )
-
 
 PLAN_PROMPT = ChatPromptTemplate.from_messages([
     ("system",
@@ -43,22 +43,21 @@ You MUST output ONLY valid JSON matching this schema:
 Rules:
 - NO markdown
 - NO explanation
-- NO text outside JSON
 - ONLY valid JSON
-- "confidence": A score from 0.0 to 1.0 for EVERY tool listed in agent_calls. 
-- Higher confidence (0.8+) for tools directly matching the query type (e.g., 'memory' for personal history, 'web' for news).
-- If unsure, return empty list for agent_calls and 0.0 for confidence.
 
-IMPORTANT RULE:
-- ALWAYS include "memory" in agent_calls (it is mandatory for every query)
-- Set confidence["memory"] >= 0.7 unless session_id is empty or invalid
+CRITICAL RULES:
+- "memory" MUST ALWAYS be included in agent_calls
+- agent_calls can NEVER be empty
+- Minimum output: ["memory"]
 
-Reason:
-Memory is required to personalize and improve response quality.
+Confidence rules:
+- 0.0 to 1.0 for each tool
+- memory confidence must be >= 0.7 unless session is invalid
 
-If unsure:
-- still include "memory"
-- just lower confidence (0.3–0.6)
+Tool selection:
+- rag → factual/internal knowledge
+- web → real-time or external info
+- memory → ALWAYS for personalization
 """),
     ("human",
      """
@@ -150,9 +149,30 @@ final_chain = FINAL_PROMPT | llm | StrOutputParser()
 
 def build_short_term_memory(session_id: str, limit: int = 10):
     history = get_chat_history(session_id, limit)
-    if not history:
-        return "No short-term memory found."
-    return "\n".join([f"{h['role']}: {h['content']}" for h in history])
+
+    if history:
+        return "\n".join([
+            f"{h['role']}: {h['content']}" for h in history
+        ])
+
+    long_memory = get_long_term_memory(session_id, limit=5)
+
+    if not long_memory:
+        return "No memory found."
+
+    for mem in long_memory:
+        insert_message(
+            session_id,
+            role="system",
+            content=f"[BOOTSTRAP_MEMORY] {mem['content']}",
+            model_used="bootstrap"
+        )
+
+    history = get_chat_history(session_id, limit)
+
+    return "\n".join([
+        f"{h['role']}: {h['content']}" for h in history
+    ])
 
 
 def build_long_term_memory(session_id: str, limit: int = 20):
@@ -165,31 +185,55 @@ def build_long_term_memory(session_id: str, limit: int = 20):
     ])
 
 
-def execute_tools(query, session_id, agent_calls):
+async def execute_tools(query, session_id, agent_calls):
     results = {"rag": None, "web": None, "memory": None}
 
     if "rag" in agent_calls:
-        results["rag"] = run_rag(query)
+        results["rag"] = await run_rag(query)
 
     if "web" in agent_calls:
-        results["web"] = run_web(query)
+        results["web"] = await run_web(query)
 
     if "memory" in agent_calls:
-        results["memory"] = run_memory(session_id)
+        results["memory"] = await run_memory(session_id)
 
     return results
 
 
-def rag_failed(rag_output: str) -> bool:
+def rag_failed(rag_output) -> bool:
+    if not rag_output:
+        return True
+
+    if isinstance(rag_output, dict):
+        rag_output = (
+            rag_output.get("content")
+            or rag_output.get("text")
+            or ""
+        )
+
+    if hasattr(rag_output, "__await__"):
+        return True
+
+    if not isinstance(rag_output, str):
+        return True
+
     return (
-        not rag_output
-        or "not found" in rag_output.lower()
+        "not found" in rag_output.lower()
         or "no relevant" in rag_output.lower()
     )
 
 
-def web_has_answer(web_output: str) -> bool:
-    return bool(web_output and "no relevant" not in web_output.lower())
+def web_has_answer(web_output) -> bool:
+    if not web_output:
+        return False
+
+    if isinstance(web_output, dict):
+        web_output = web_output.get("content") or ""
+
+    if not isinstance(web_output, str):
+        return False
+
+    return "no relevant" not in web_output.lower()
 
 
 def should_force_web(query: str, results: dict) -> bool:
@@ -199,11 +243,9 @@ def should_force_web(query: str, results: dict) -> bool:
 
 async def aggregate_response(query: str, session_id: str, max_steps: int = 3):
 
-    short_memory = get_chat_history(session_id)
-
     plan = ["rag", "web", "memory"]  
 
-    results = execute_tools(query, session_id, plan)
+    results = await execute_tools(query, session_id, plan)
 
     for _ in range(max_steps - 1):
 
@@ -217,21 +259,31 @@ async def aggregate_response(query: str, session_id: str, max_steps: int = 3):
                 web_context=web_state["content"]
             )
 
-        if (rag_state and rag_state.get("found")) or web_state:
+        if (isinstance(rag_state, dict) and rag_state.get("found")) or (isinstance(web_state, dict) and web_state.get("content")):
             break
 
     final_answer = final_chain.invoke({
         "query": query,
-        "memory": short_memory,
+        "short_memory": build_short_term_memory(session_id),
+        "long_memory": build_long_term_memory(session_id),
+        "memory": results["memory"]["content"] if results["memory"] else "",
         "rag": results["rag"]["content"] if results["rag"] else "",
-        "web": results["web"]["content"] if results["web"] else "",
-        "memory": results["memory"]["content"] if results["memory"] else ""
+        "web": results["web"]["content"] if results["web"] else ""
     })
 
     insert_long_term_memory(
         session_id,
         f"[hybrid] Q: {query} | A: {final_answer[:1000]}",
         source="hybrid"
+    )
+
+    insert_message(session_id, "user", query, model_used="user")
+
+    insert_message(
+        session_id,
+        "assistant",
+        final_answer,
+        model_used="claude-sonnet-4-6"
     )
 
     return {

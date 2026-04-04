@@ -3,18 +3,18 @@ from langgraph.graph import StateGraph, START, END
 from langsmith import traceable
 
 from agents.aggregator_agent import (
+    aggregate_response,
     build_short_term_memory,
     build_long_term_memory,
     plan_chain,
-    replan_chain,
-    final_chain
+    replan_chain
 )
 
 from core import runtime
 from agents.rag_agent import run_rag
 from agents.web_agent import run_web
 from agents.memory_agent import run_memory
-from memory.sqllite_memory import insert_long_term_memory
+from schemas import plan
 
 
 class WorkflowState(TypedDict, total=False):
@@ -47,6 +47,9 @@ def planner_node(state: WorkflowState):
         "long_memory": long_memory
     })
 
+    if not plan_result.agent_calls:
+        plan_result.agent_calls = ["memory"]
+
     dynamic_confidence = {
         call.tool: call.confidence for call in plan_result.agent_calls
     }
@@ -78,12 +81,12 @@ def route_tools(state: WorkflowState):
     if "rag" in calls and "web" in executed:
         if "not found" in state.get("rag", "").lower():
             return "rag"
-        
-    if "memory" not in calls and "memory" not in executed:
-        return "memory"
     
     if "web" in executed and "memory" not in executed and "memory" in calls:
         return "memory"
+    
+    # if "memory" not in calls and "memory" not in executed:
+    #     return "memory"
 
     for c in calls:
         if c not in executed:
@@ -154,26 +157,12 @@ def replan_node(state: WorkflowState):
     }
 
 
-def aggregator_node(state: WorkflowState):
-    final_answer = final_chain.invoke({
-        "query": state["query"],
-        "short_memory": state.get("short_memory", ""),
-        "long_memory": state.get("long_memory", ""),
-        "memory": state.get("memory", "No relevant memory found."),
-        "rag": state.get("rag", "No relevant RAG content found."),
-        "web": state.get("web", "No relevant Web content found.")
-    })
-
-    if state.get("session_id"):
-        insert_long_term_memory(
-            state["session_id"],
-            f"[hybrid-react] Q: {state['query']} | A: {final_answer[:1000]}",
-            source="hybrid-react"
-        )
-
-    return {
-        "final_response": final_answer
-    }
+async def aggregator_node(state: WorkflowState):
+    return await aggregate_response(
+        query=state["query"],
+        session_id=state.get("session_id"),
+        max_steps=3
+    )
 
 
 def build_workflow_graph():

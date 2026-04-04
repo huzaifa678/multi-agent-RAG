@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from sqlite3 import Connection
 from utils.logger import get_logger
@@ -7,6 +8,7 @@ logger = get_logger("memory-db")
 DB_NAME = "app.db"
 
 def get_db_connection() -> Connection:
+
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     return conn
@@ -84,8 +86,9 @@ def insert_message(session_id: str, role: str, content: str, model_used: str | N
 
 def get_chat_history(session_id: str, limit: int = 10):
     conn = get_db_connection()
+    conn.row_factory = sqlite3.Row 
     cursor = conn.cursor()
-
+    
     cursor.execute("""
         SELECT role, content
         FROM chat_history

@@ -19,6 +19,8 @@ services:
         - action: sync
           path: .
           target: /app
+    volumes:
+      - ./app.db:/app/app.db
 
   
   mcp-rag:
@@ -38,6 +40,8 @@ services:
         - action: sync
           path: .
           target: /app
+    volumes:
+      - ./app.db:/app/app.db
 
   mcp-web:
     container_name: mcp-web
@@ -54,6 +58,8 @@ services:
         - action: sync
           path: .
           target: /app
+    volumes:
+      - ./app.db:/app/app.db
 
 
   mcp-memory:
@@ -71,6 +77,8 @@ services:
         - action: sync
           path: .
           target: /app
+    volumes:
+      - ./app.db:/app/app.db
 
   chroma:
     container_name: chroma

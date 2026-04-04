@@ -22,7 +22,16 @@ def get_history(session_id: str, limit: int = 10):
     """
     Retrieve chat history for a session.
     """
-    return get_chat_history(session_id, limit)
+
+    data = get_chat_history(session_id, limit)
+
+    print("DATA", data)
+
+    print(f"📡 MCP TOOL DEBUG: Found {len(data)} rows to return")
+
+    return {
+        "structured_content": data
+    }
 
 
 if __name__ == "__main__":
