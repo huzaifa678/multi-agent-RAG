@@ -85,8 +85,8 @@ def route_tools(state: WorkflowState):
     if "web" in executed and "memory" not in executed and "memory" in calls:
         return "memory"
     
-    # if "memory" not in calls and "memory" not in executed:
-    #     return "memory"
+    if "memory" not in calls and "memory" not in executed:
+        return "memory"
 
     for c in calls:
         if c not in executed:
@@ -158,11 +158,15 @@ def replan_node(state: WorkflowState):
 
 
 async def aggregator_node(state: WorkflowState):
-    return await aggregate_response(
+    
+    response_text = await aggregate_response(
         query=state["query"],
-        session_id=state.get("session_id"),
-        max_steps=3
+        session_id=state.get("session_id")
     )
+    
+    return {
+        "final_response": response_text
+    }
 
 
 def build_workflow_graph():
