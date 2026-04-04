@@ -74,6 +74,12 @@ def route_tools(state: WorkflowState):
     if "rag" in calls and "web" in executed:
         if "not found" in state.get("rag", "").lower():
             return "rag"
+        
+    if "memory" in calls and "memory" not in executed:
+        return "memory"
+    
+    if "web" in executed and "memory" not in executed and "memory" in calls:
+        return "memory"
 
     for c in calls:
         if c not in executed:
