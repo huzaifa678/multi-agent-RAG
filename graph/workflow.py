@@ -58,7 +58,11 @@ def planner_node(state: WorkflowState):
         "long_memory": long_memory,
         "agent_calls": tool_names,
         "executed_calls": [],
-        "confidence": dynamic_confidence
+        "confidence": dynamic_confidence,
+        "planner_confidence_log": {
+            "raw_confidence": dynamic_confidence,
+            "ordered_tools": tool_names
+        }
     }
 
 
@@ -75,7 +79,7 @@ def route_tools(state: WorkflowState):
         if "not found" in state.get("rag", "").lower():
             return "rag"
         
-    if "memory" in calls and "memory" not in executed:
+    if "memory" not in calls and "memory" not in executed:
         return "memory"
     
     if "web" in executed and "memory" not in executed and "memory" in calls:
@@ -141,7 +145,12 @@ def replan_node(state: WorkflowState):
     
     return {
         "agent_calls": result.agent_calls or [],
-        "done": is_done
+        "done": is_done,
+        "replan_debug": {
+            "next_calls": result.agent_calls,
+            "done": is_done,
+            "previous_confidence": state.get("confidence", {})
+        }
     }
 
 
