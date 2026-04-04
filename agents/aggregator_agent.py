@@ -166,18 +166,19 @@ def build_long_term_memory(session_id: str, limit: int = 20):
 
 
 def execute_tools(query, session_id, agent_calls):
-    results = results or {"rag": None, "web": None, "memory": None}
+    results = {"rag": None, "web": None, "memory": None}
 
-    if "rag" in agent_calls and not results["rag"]:
+    if "rag" in agent_calls:
         results["rag"] = run_rag(query)
 
-    if "web" in agent_calls and not results["web"]:
+    if "web" in agent_calls:
         results["web"] = run_web(query)
 
-    if "memory" in agent_calls and not results["memory"]:
+    if "memory" in agent_calls:
         results["memory"] = run_memory(session_id)
 
     return results
+
 
 def rag_failed(rag_output: str) -> bool:
     return (

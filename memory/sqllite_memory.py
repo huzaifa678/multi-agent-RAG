@@ -1,5 +1,8 @@
 import sqlite3
 from sqlite3 import Connection
+from utils.logger import get_logger
+
+logger = get_logger("memory-db")
 
 DB_NAME = "app.db"
 
@@ -48,16 +51,35 @@ def create_chat_history():
 
 
 def insert_message(session_id: str, role: str, content: str, model_used: str | None = None):
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    try:
+        logger.info("insert_message CALLED")
+        logger.info(f"session_id={session_id}, role={role}, model_used={model_used}")
 
-    cursor.execute("""
-        INSERT INTO chat_history (session_id, role, content, model_used)
-        VALUES (?, ?, ?, ?)
-    """, (session_id, role, content, model_used))
+        conn = get_db_connection()
 
-    conn.commit()
-    conn.close()
+        logger.info(f"DB PATH: {conn}")
+
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO chat_history (session_id, role, content, model_used)
+            VALUES (?, ?, ?, ?)
+        """, (session_id, role, content, model_used or "unknown"))
+
+        conn.commit()
+
+        logger.info("INSERT COMMITTED")
+
+        cursor.execute("SELECT changes()")
+        changes = cursor.fetchone()[0]
+        logger.info(f"ROWS INSERTED: {changes}")
+
+        conn.close()
+        logger.info("DB CONNECTION CLOSED")
+
+    except Exception as e:
+        logger.exception("insert_message FAILED with error: %s", str(e))
+        raise
 
 
 def get_chat_history(session_id: str, limit: int = 10):

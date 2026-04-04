@@ -1,7 +1,7 @@
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from tools.memory.memory_tools import get_history
+from tools.memory.memory_tools import get_history, save_message
 from utils.config import Config
 
 llm = ChatOpenAI(
@@ -25,6 +25,13 @@ async def run_memory(session_id: str):
     summary = await memory_chain.ainvoke({
         "history": history
     })
+
+    await save_message(
+        session_id=session_id,
+        role="assistant",
+        content=summary,
+        model_used="gpt-4o-mini"
+    )
 
     return {
         "content": summary,
