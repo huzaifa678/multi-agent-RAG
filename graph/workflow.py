@@ -136,7 +136,9 @@ async def memory_node(state: WorkflowState):
 
 
 def replan_node(state: WorkflowState):
-
+    
+    existing_calls = state.get("agent_calls", [])
+    
     result = replan_chain.invoke({
         "query": state["query"],
         "rag": state.get("rag", ""),
@@ -144,21 +146,23 @@ def replan_node(state: WorkflowState):
         "memory": state.get("memory", "")
     })
 
+    new_calls = result.agent_calls or []
+    updated_calls = list(set(existing_calls + new_calls))
+    
     is_done = getattr(result, "done", False)
     
     return {
-        "agent_calls": result.agent_calls or [],
+        "agent_calls": updated_calls,
         "done": is_done,
         "replan_debug": {
-            "next_calls": result.agent_calls,
-            "done": is_done,
-            "previous_confidence": state.get("confidence", {})
+            "next_calls": new_calls,
+            "done": is_done
         }
     }
 
 
 async def aggregator_node(state: WorkflowState):
-    
+
     response_text = await aggregate_response(
         query=state["query"],
         session_id=state.get("session_id")
