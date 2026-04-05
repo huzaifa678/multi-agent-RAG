@@ -1,3 +1,5 @@
+import asyncio
+
 from langchain_groq import ChatGroq
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -32,15 +34,16 @@ async def run_rag(query: str, web_context: str = None):
 
     found = bool(result and len(result) > 0)
 
-    if not found and web_context:
+    if not found and web_context and "no relevant" not in web_context.lower():
         print(f"RAG Agent: Learning from web context for query: {query}")
         cleaned = clean_text(web_context)
         chunks = chunk_text(cleaned)
 
-        vectorstore.add_texts(
+        asyncio.create_task(asyncio.to_thread(
+            vectorstore.add_texts,
             texts=chunks,
             metadatas=[{"source": "auto_update", "query": query}] * len(chunks)
-        )
+        ))
 
         result = retrieve_context(query)
         found = bool(result and len(result) > 0)
