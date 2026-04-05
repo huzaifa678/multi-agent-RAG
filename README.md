@@ -206,6 +206,11 @@ python -m mcp_servers.rag.server
 python -m mcp_servers.web.server
 python -m mcp_servers.memory.server
 
+# Start MCP servers using uvicorn (in separate terminals)
+uvicorn mcp_servers.rag.server:app --host 0.0.0.0 --port 8001 --reload
+uvicorn mcp_servers.web.server:app --host 0.0.0.0 --port 8002 --reload
+uvicorn mcp_servers.memory.server:app --host 0.0.0.0 --port 8001 --reload
+
 # Start backend
 uvicorn main:app --reload --port 8000
 ```
