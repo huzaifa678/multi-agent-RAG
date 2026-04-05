@@ -285,7 +285,7 @@ Set `LANGCHAIN_TRACING_V2=true` and provide `LANGCHAIN_API_KEY` to enable.
 
 ### LangSmith Trace Payload Limit (Document Ingestion)
 
-When uploading large documents (e.g. PDFs > ~100 pages), the `@traceable` decorator on `upload_service` can cause the trace to **pause or fail** because LangSmith has a payload size limit per run (~1MB). The full document content gets captured in the trace inputs, exceeding this limit.
+When uploading large documents (e.g. PDFs > ~100 pages), the `@traceable` decorator on `upload_service` can cause the trace to **pause or fail** because LangSmith has a payload size limit per run (~1MB). The full document content gets captured in the trace inputs, exceeding this limit. This issue is also seen in web_search where the retrieved content from the web can possibly exceed the LangSmith payload size limit.
 
 **Current workaround:** `web/search.py` already implements `trace_safe_results()` which truncates content before sending to LangSmith. The same pattern needs to be applied to the upload pipeline — stripping raw document content from trace inputs and only logging metadata (file_id, filename, chunk count).
 
