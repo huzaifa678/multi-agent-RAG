@@ -1,4 +1,5 @@
-from typing import Dict, Any, List, TypedDict
+import operator
+from typing import Annotated, Dict, Any, List, TypedDict
 from langgraph.graph import StateGraph, START, END
 from langsmith import traceable
 
@@ -24,8 +25,8 @@ class WorkflowState(TypedDict, total=False):
     short_memory: str
     long_memory: str
 
-    agent_calls: List[str]
-    executed_calls: List[str]
+    agent_calls: Annotated[List[str], operator.add]
+    executed_calls: Annotated[List[str], operator.add]
     confidence: Dict[str, float] 
 
     rag: str
@@ -68,37 +69,30 @@ def planner_node(state: WorkflowState):
         }
     }
 
-
 def route_tools(state: WorkflowState):
+    if state.get("done"):
+        return "aggregator"
 
     calls = state.get("agent_calls", [])
     executed = state.get("executed_calls", [])
-    confidence = state.get("confidence", {})
+    rag_content = state.get("rag", "").lower()
 
-    best_tool = None
-    best_score = -1
-
-    if "rag" in calls and "web" in executed:
-        if "not found" in state.get("rag", "").lower():
-            return "rag"
+    if "web" in executed and "rag" in calls:
+        if "not found" in rag_content or not rag_content:
+             return "rag"
     
     if "web" in executed and "memory" not in executed and "memory" in calls:
         return "memory"
     
     if "memory" not in executed:
         return "memory"
-
-    for c in calls:
-        if c not in executed:
-            score = confidence.get(c, 0.5)
-            if score > best_score:
-                best_score = score
-                best_tool = c
-
-    if best_tool:
-        return best_tool
-
-    return "aggregator"
+    
+    to_run = [c for c in calls if c not in executed]
+    
+    if not to_run:
+        return "aggregator"
+    
+    return to_run 
 
 
 async def rag_node(state: WorkflowState):
@@ -165,7 +159,8 @@ async def aggregator_node(state: WorkflowState):
 
     response_text = await aggregate_response(
         query=state["query"],
-        session_id=state.get("session_id")
+        session_id=state.get("session_id"),
+        state_data=state
     )
     
     return {
@@ -184,8 +179,7 @@ def build_workflow_graph():
     graph.add_node("aggregator", aggregator_node)
 
     graph.add_edge(START, "planner")
-
-    graph.add_edge("planner", "replan")
+    graph.add_conditional_edges("planner", route_tools)
 
     graph.add_edge("rag", "replan")
     graph.add_edge("web", "replan")

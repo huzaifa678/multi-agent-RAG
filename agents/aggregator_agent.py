@@ -1,9 +1,12 @@
+import asyncio
+
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from agents.rag_agent import run_rag
-from agents.web_agent import run_web
-from agents.memory_agent import run_memory
+from langchain_openai import ChatOpenAI
+from utils.logger import get_logger
+
+logger = get_logger()
 
 from memory.sqllite_memory import (
     get_chat_history,
@@ -23,6 +26,8 @@ llm = ChatAnthropic(
     temperature=0,
     max_tokens=1024,
 )
+
+MAX_CONTEXT_CHARS = 1200
 
 PLAN_PROMPT = ChatPromptTemplate.from_messages([
     ("system",
@@ -184,108 +189,62 @@ def build_long_term_memory(session_id: str, limit: int = 20):
         for h in history
     ])
 
+fallback_llm = ChatOpenAI(
+    api_key=Config.OPENAI_API_KEY,
+    model="gpt-4o-mini",
+    temperature=0,
+    max_tokens=400
+)
 
-async def execute_tools(query, session_id, agent_calls):
-    results = {"rag": None, "web": None, "memory": None}
-
-    if "rag" in agent_calls:
-        results["rag"] = await run_rag(query)
-
-    if "web" in agent_calls:
-        results["web"] = await run_web(query)
-
-    if "memory" in agent_calls:
-        results["memory"] = await run_memory(session_id)
-
-    return results
+fallback_chain = FINAL_PROMPT | fallback_llm | StrOutputParser()
 
 
-def rag_failed(rag_output) -> bool:
-    if not rag_output:
-        return True
+async def safe_llm_call(payload):
+    try:
+        logger.info("Using anthropic")
+        return await final_chain.ainvoke(payload)
+    except Exception as e:
+        logger.warning("Anthropic failed switching to OpenAI:", str(e))
+        return await fallback_chain.ainvoke(payload)
+    
 
-    if isinstance(rag_output, dict):
-        rag_output = (
-            rag_output.get("content")
-            or rag_output.get("text")
-            or ""
-        )
-
-    if hasattr(rag_output, "__await__"):
-        return True
-
-    if not isinstance(rag_output, str):
-        return True
-
-    return (
-        "not found" in rag_output.lower()
-        or "no relevant" in rag_output.lower()
-    )
+def trim(text: str, limit: int = MAX_CONTEXT_CHARS):
+    if not text:
+        return ""
+    return text[:limit]
 
 
-def web_has_answer(web_output) -> bool:
-    if not web_output:
-        return False
+async def aggregate_response(query: str, session_id: str, state_data: dict):
 
-    if isinstance(web_output, dict):
-        web_output = web_output.get("content") or ""
+    rag_content = trim(state_data.get("rag", ""))
+    web_content = trim(state_data.get("web", ""))
+    memory_content = trim(state_data.get("memory", ""))
+    short_memory = trim(state_data.get("short_memory", ""), 800)
+    long_memory = trim(state_data.get("long_memory", ""), 800)
 
-    if not isinstance(web_output, str):
-        return False
-
-    return "no relevant" not in web_output.lower()
-
-
-def should_force_web(query: str, results: dict) -> bool:
-    keywords = ["what", "how", "why", "explain", "define"]
-    return any(k in query.lower() for k in keywords) and not results["web"]
-
-
-async def aggregate_response(query: str, session_id: str, max_steps: int = 3):
-
-    plan = ["rag", "web", "memory"]  
-
-    results = await execute_tools(query, session_id, plan)
-
-    for _ in range(max_steps - 1):
-
-        rag_state = results["rag"]
-        web_state = results["web"]
-
-        if rag_failed(rag_state) and web_has_answer(web_state):
-
-            results["rag"] = await run_rag(
-                query,
-                web_context=web_state["content"]
-            )
-
-        if (isinstance(rag_state, dict) and rag_state.get("found")) or (isinstance(web_state, dict) and web_state.get("content")):
-            break
-
-    final_answer = final_chain.invoke({
+    final_answer = await safe_llm_call({
         "query": query,
-        "short_memory": build_short_term_memory(session_id),
-        "long_memory": build_long_term_memory(session_id),
-        "memory": results["memory"]["content"] if results["memory"] else "",
-        "rag": results["rag"]["content"] if results["rag"] else "",
-        "web": results["web"]["content"] if results["web"] else ""
+        "short_memory": short_memory,
+        "long_memory": long_memory,
+        "memory": memory_content,
+        "rag": rag_content,
+        "web": web_content
     })
 
-    insert_long_term_memory(
+    asyncio.create_task(asyncio.to_thread(
+        insert_long_term_memory,
         session_id,
-        f"[hybrid] Q: {query} | A: {final_answer[:1000]}",
-        source="hybrid"
-    )
+        f"Q: {query} | A: {final_answer[:500]}",
+        "hybrid"
+    ))
 
-    insert_message(session_id, "user", query, model_used="user")
-
-    insert_message(
+    asyncio.create_task(asyncio.to_thread(
+        insert_message,
         session_id,
         "assistant",
         final_answer,
-        model_used="claude-sonnet-4-6"
-    )
+        "claude-sonnet-4-6"
+    ))
 
-    return {
-        "content": final_answer
-    }
+    return final_answer
+
