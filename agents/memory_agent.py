@@ -29,7 +29,6 @@ Analyze the provided conversation history.
 memory_chain = MEMORY_PROMPT | llm | StrOutputParser()
 
 
-
 async def run_memory(session_id: str):
 
     raw = await get_history(session_id)
