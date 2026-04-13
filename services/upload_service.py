@@ -33,7 +33,7 @@ async def handle_upload(file: UploadFile, background_tasks: BackgroundTasks):
 
         return {"file_id": file_id, "status": "processing"}
 
-    except Exception as e:
+    except Exception:
         logger.exception(f"Upload failed | filename={getattr(file, 'filename', None)}")
 
         raise HTTPException(status_code=500, detail="File upload failed")

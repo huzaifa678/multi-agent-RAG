@@ -6,11 +6,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langsmith import traceable
 from utils.text import chunk_text
 from rag.retriever import retrieve_context
-from rag.retriever import retrieve_context
 from utils.config import Config
 from rag.chroma_store import vectorstore
-from rag.retriever import retrieve_context
-from utils.text import chunk_text, clean_text
+from utils.text import clean_text
 
 llm = ChatGroq(
     api_key=Config.GROQ_API_KEY, model="llama-3.3-70b-versatile", temperature=0

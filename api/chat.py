@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
 from langsmith import traceable
-from langsmith import traceable
 from schemas.chat import ChatRequest
 from services.chat_service import handle_chat
 from utils.logger import get_logger
@@ -29,7 +28,7 @@ async def chat(payload: ChatRequest):
         logger.warning(f"HTTPException occurred: {e.detail}")
         raise e
 
-    except Exception as e:
+    except Exception:
         logger.exception("Unexpected error in /chat endpoint")
 
         raise HTTPException(status_code=500, detail="Internal Server Error")

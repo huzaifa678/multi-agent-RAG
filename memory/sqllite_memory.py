@@ -1,4 +1,3 @@
-import os
 import sqlite3
 from sqlite3 import Connection
 from utils.logger import get_logger

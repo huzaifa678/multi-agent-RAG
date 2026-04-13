@@ -31,7 +31,7 @@ async def handle_chat(payload: ChatRequest):
         logger.warning(f"Missing required field in payload: {str(e)}")
         raise
 
-    except Exception as e:
+    except Exception:
         logger.exception(
             f"Unexpected error in chat service | session_id={payload.session_id}"
         )

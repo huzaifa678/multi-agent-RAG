@@ -1,4 +1,4 @@
-from tools.rag.client import get_rag_client, rag_client
+from tools.rag.client import get_rag_client
 from tools.rag.wrapper import rag_client_wrapper
 
 

@@ -77,7 +77,7 @@ def route_tools(state: WorkflowState):
 
     calls = state.get("agent_calls", [])
     executed = state.get("executed_calls", [])
-    rag_content = state.get("rag", "").lower()
+    state.get("rag", "").lower()
 
     if "web" in executed and "rag" not in executed:
         return "rag"

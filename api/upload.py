@@ -24,7 +24,7 @@ async def upload_doc(background_tasks: BackgroundTasks, file: UploadFile = File(
         logger.warning(f"HTTPException during upload: {e.detail}")
         raise e
 
-    except Exception as e:
+    except Exception:
         logger.exception(f"Unexpected error while uploading file: {file.filename}")
 
         raise HTTPException(
