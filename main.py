@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from ragas.cli import app
 from api import health, upload, chat
 from core import runtime
 from graph.workflow import build_workflow_graph
