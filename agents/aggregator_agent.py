@@ -96,7 +96,7 @@ RULES:
 - Only mark 'done': true when you have sufficient information to answer the query.
 
 STRATEGY:
-1. If RAG says "not found" but Web has the answer, you MUST call "rag" again. 
+1. If RAG says "not found" but Web has the answer, you MUST call "rag" again.
    This triggers the RAG agent to save the Web info into the database.
 
 Return structured output only.
