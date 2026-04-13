@@ -7,11 +7,13 @@ logger = get_logger("memory-db")
 
 DB_NAME = "app.db"
 
+
 def get_db_connection() -> Connection:
 
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def create_long_term_memory():
     conn = get_db_connection()
@@ -52,7 +54,9 @@ def create_chat_history():
     create_long_term_memory()
 
 
-def insert_message(session_id: str, role: str, content: str, model_used: str | None = None):
+def insert_message(
+    session_id: str, role: str, content: str, model_used: str | None = None
+):
     try:
         logger.info("insert_message CALLED")
         logger.info(f"session_id={session_id}, role={role}, model_used={model_used}")
@@ -63,10 +67,13 @@ def insert_message(session_id: str, role: str, content: str, model_used: str | N
 
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO chat_history (session_id, role, content, model_used)
             VALUES (?, ?, ?, ?)
-        """, (session_id, role, content, model_used or "unknown"))
+        """,
+            (session_id, role, content, model_used or "unknown"),
+        )
 
         conn.commit()
 
@@ -86,16 +93,19 @@ def insert_message(session_id: str, role: str, content: str, model_used: str | N
 
 def get_chat_history(session_id: str, limit: int = 10):
     conn = get_db_connection()
-    conn.row_factory = sqlite3.Row 
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    
-    cursor.execute("""
+
+    cursor.execute(
+        """
         SELECT role, content
         FROM chat_history
         WHERE session_id = ?
         ORDER BY id ASC
         LIMIT ?
-    """, (session_id, limit))
+    """,
+        (session_id, limit),
+    )
 
     rows = cursor.fetchall()
     conn.close()
@@ -107,10 +117,13 @@ def insert_long_term_memory(session_id: str, content: str, source: str | None = 
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT INTO long_term_memory (session_id, content, source)
         VALUES (?, ?, ?)
-    """, (session_id, content, source))
+    """,
+        (session_id, content, source),
+    )
 
     conn.commit()
     conn.close()
@@ -120,13 +133,16 @@ def get_long_term_memory(session_id: str, limit: int = 20):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT content, source
         FROM long_term_memory
         WHERE session_id = ?
         ORDER BY id ASC
         LIMIT ?
-    """, (session_id, limit))
+    """,
+        (session_id, limit),
+    )
 
     rows = cursor.fetchall()
     conn.close()

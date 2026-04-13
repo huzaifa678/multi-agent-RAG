@@ -1,9 +1,12 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
+
 class AgentCall(BaseModel):
     tool: str = Field(description="The tool to call: 'rag', 'web', or 'memory'")
-    confidence: float = Field(description="Confidence score between 0.0 and 1.0", ge=0, le=1)
+    confidence: float = Field(
+        description="Confidence score between 0.0 and 1.0", ge=0, le=1
+    )
     reasoning: Optional[str] = Field(description="Brief reason for this tool's score")
 
 

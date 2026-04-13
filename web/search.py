@@ -8,16 +8,11 @@ from utils.config import Config
 from langsmith import Client
 
 tavily = TavilySearch(
-    max_results=5,
-    search_depth="advanced",
-    api_key=Config.TAVILY_API_KEY
+    max_results=5, search_depth="advanced", api_key=Config.TAVILY_API_KEY
 )
 
 wiki_retriever = WikipediaRetriever(
-    api_wrapper=WikipediaAPIWrapper(
-        top_k_results=2,
-        doc_content_chars_max=2000
-    )
+    api_wrapper=WikipediaAPIWrapper(top_k_results=2, doc_content_chars_max=2000)
 )
 
 client = Client()
@@ -56,12 +51,14 @@ def fast_wikipedia(query: str):
 
         data = r.json()
 
-        return [{
-            "source": "wikipedia",
-            "title": data.get("title", ""),
-            "url": data.get("content_urls", {}).get("desktop", {}).get("page", ""),
-            "content": data.get("extract", "")
-        }]
+        return [
+            {
+                "source": "wikipedia",
+                "title": data.get("title", ""),
+                "url": data.get("content_urls", {}).get("desktop", {}).get("page", ""),
+                "content": data.get("extract", ""),
+            }
+        ]
 
     except Exception as e:
         print("Wiki error:", e)
@@ -71,19 +68,13 @@ def fast_wikipedia(query: str):
 async def web_search(query: str) -> List[dict]:
     print("\n[WEB] START:", query)
 
-    tavily_task = asyncio.create_task(
-        asyncio.to_thread(tavily.invoke, query)
-    )
+    tavily_task = asyncio.create_task(asyncio.to_thread(tavily.invoke, query))
 
-    wiki_task = asyncio.create_task(
-        asyncio.to_thread(fast_wikipedia, query)
-    )
+    wiki_task = asyncio.create_task(asyncio.to_thread(fast_wikipedia, query))
 
     try:
         done, pending = await asyncio.wait(
-            [tavily_task, wiki_task],
-            timeout=5,
-            return_when=asyncio.FIRST_COMPLETED
+            [tavily_task, wiki_task], timeout=5, return_when=asyncio.FIRST_COMPLETED
         )
     except Exception as e:
         print("WAIT ERROR:", e)
@@ -103,11 +94,13 @@ async def web_search(query: str) -> List[dict]:
             print(f"Tavily returned {len(tavily_results)} results")
 
             for r in tavily_results:
-                results.append({
-                    "source": "tavily",
-                    "title": r.get("title", ""),
-                    "url": r.get("url", ""),
-                })
+                results.append(
+                    {
+                        "source": "tavily",
+                        "title": r.get("title", ""),
+                        "url": r.get("url", ""),
+                    }
+                )
 
         elif isinstance(res, list):
             print(f"Wiki returned {len(res)} results")
@@ -123,7 +116,7 @@ async def web_search(query: str) -> List[dict]:
         name="web-search",
         inputs={"query": query},
         outputs={"results": trace_output},
-        run_type="tool"
+        run_type="tool",
     )
 
     print(f"[WEB] DONE {len(results)} results\n")

@@ -3,6 +3,7 @@ from utils.config import Config
 
 memory_client: Client | None = None
 
+
 async def get_memory_client():
     global memory_client
 

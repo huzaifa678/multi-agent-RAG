@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class Config:
     CHROMA_PATH = os.getenv("CHROMA_PATH")
     CHROMA_HOST = os.getenv("CHROMA_HOST")

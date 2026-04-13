@@ -1,5 +1,6 @@
 import asyncio
 
+
 def sync_call(coro):
     try:
         loop = asyncio.get_event_loop()

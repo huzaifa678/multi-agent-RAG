@@ -19,48 +19,39 @@ Rules:
 """
 
 
-PROMPT = ChatPromptTemplate.from_messages([
-    ("system", SYSTEM),
-    MessagesPlaceholder(variable_name="history"),
-    ("human", "{input}")
-])
+PROMPT = ChatPromptTemplate.from_messages(
+    [
+        ("system", SYSTEM),
+        MessagesPlaceholder(variable_name="history"),
+        ("human", "{input}"),
+    ]
+)
 
 
 groq = ChatGroq(
-    model="llama-3.3-70b-versatile",
-    temperature=0,
-    api_key=Config.GROQ_API_KEY
+    model="llama-3.3-70b-versatile", temperature=0, api_key=Config.GROQ_API_KEY
 )
 
-openai = ChatOpenAI(
-    model="gpt-4o-mini",
-    temperature=0,
-    api_key=Config.OPENAI_API_KEY
-)
+openai = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=Config.OPENAI_API_KEY)
+
 
 def build_chain(llm):
     return PROMPT | llm | StrOutputParser()
 
+
 groq_chain = build_chain(groq)
 openai_chain = build_chain(openai)
+
 
 async def contextualize(state: dict) -> str:
     history = state.get("history", [])
 
     try:
         return await asyncio.to_thread(
-            groq_chain.invoke,
-            {
-                "input": state["input"],
-                "history": history
-            }
+            groq_chain.invoke, {"input": state["input"], "history": history}
         )
 
     except Exception:
         return await asyncio.to_thread(
-            openai_chain.invoke,
-            {
-                "input": state["input"],
-                "history": history
-            }
+            openai_chain.invoke, {"input": state["input"], "history": history}
         )

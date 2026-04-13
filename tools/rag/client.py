@@ -1,8 +1,8 @@
 from fastmcp import Client
 from utils.config import Config
 
-
 rag_client: Client | None = None
+
 
 async def get_rag_client():
     global rag_client

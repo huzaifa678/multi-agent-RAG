@@ -13,19 +13,21 @@ from rag.retriever import retrieve_context
 from utils.text import chunk_text, clean_text
 
 llm = ChatGroq(
-    api_key=Config.GROQ_API_KEY,
-    model="llama-3.3-70b-versatile",
-    temperature=0
+    api_key=Config.GROQ_API_KEY, model="llama-3.3-70b-versatile", temperature=0
 )
 
-RAG_PROMPT = ChatPromptTemplate.from_messages([
-    ("system",
-     "Answer ONLY using context. If missing, say 'not found in knowledge base'."),
-    ("human",
-     "Query: {query}\n\nContext:\n{context}")
-])
+RAG_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "Answer ONLY using context. If missing, say 'not found in knowledge base'.",
+        ),
+        ("human", "Query: {query}\n\nContext:\n{context}"),
+    ]
+)
 
 rag_chain = RAG_PROMPT | llm | StrOutputParser()
+
 
 @traceable(name="rag_agent_with_update")
 async def run_rag(query: str, web_context: str = None):
@@ -39,24 +41,19 @@ async def run_rag(query: str, web_context: str = None):
         cleaned = clean_text(web_context)
         chunks = chunk_text(cleaned)
 
-        asyncio.create_task(asyncio.to_thread(
-            vectorstore.add_texts,
-            texts=chunks,
-            metadatas=[{"source": "auto_update", "query": query}] * len(chunks)
-        ))
+        asyncio.create_task(
+            asyncio.to_thread(
+                vectorstore.add_texts,
+                texts=chunks,
+                metadatas=[{"source": "auto_update", "query": query}] * len(chunks),
+            )
+        )
 
         result = retrieve_context(query)
         found = bool(result and len(result) > 0)
 
     context = "\n".join([d["content"] for d in result]) if found else "NOT_FOUND"
 
-    answer = await rag_chain.ainvoke({
-        "query": query,
-        "context": context
-    })
+    answer = await rag_chain.ainvoke({"query": query, "context": context})
 
-    return {
-        "content": answer,
-        "source": "rag",
-        "found": found
-    }
+    return {"content": answer, "source": "rag", "found": found}

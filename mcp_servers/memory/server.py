@@ -1,12 +1,10 @@
 from fastmcp import FastMCP
-from memory.sqllite_memory import (
-    insert_message,
-    get_chat_history
-)
+from memory.sqllite_memory import insert_message, get_chat_history
 
 mcp = FastMCP("memory-mcp-server")
 
 app = mcp.http_app
+
 
 @mcp.tool()
 def save_message(session_id: str, role: str, content: str, model_used: str = None):
@@ -29,9 +27,7 @@ def get_history(session_id: str, limit: int = 10):
 
     print(f"📡 MCP TOOL DEBUG: Found {len(data)} rows to return")
 
-    return {
-        "structured_content": data
-    }
+    return {"structured_content": data}
 
 
 if __name__ == "__main__":

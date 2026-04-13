@@ -7,6 +7,7 @@ logger = get_logger(__name__)
 
 app_graph = None
 
+
 class Runtime:
     def __init__(self):
         self.ready = False
@@ -38,7 +39,7 @@ class Runtime:
             logger.info("Memory client initialized")
         except Exception as e:
             logger.error(f"Failed to start Web client: {e}")
-            
+
         self.ready = True
         logger.info("Runtime initialized and ready")
 
@@ -47,5 +48,6 @@ class Runtime:
         await close_web_client()
         await close_rag_client()
         logger.info("Clients closed. Shutdown complete")
+
 
 runtimeObject = Runtime()

@@ -12,13 +12,12 @@ from memory.sqllite_memory import (
     get_chat_history,
     get_long_term_memory,
     insert_long_term_memory,
-    insert_message
+    insert_message,
 )
 
 from schemas.plan import PlanSchema
 from schemas.replan import ReplanSchema
 from utils.config import Config
-
 
 llm = ChatAnthropic(
     api_key=Config.ANTHROPIC_API_KEY,
@@ -29,9 +28,11 @@ llm = ChatAnthropic(
 
 MAX_CONTEXT_CHARS = 1200
 
-PLAN_PROMPT = ChatPromptTemplate.from_messages([
-    ("system",
-     """
+PLAN_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            """
 You are a STRICT JSON generator.
 
 You MUST output ONLY valid JSON matching this schema:
@@ -63,9 +64,11 @@ Tool selection:
 - rag → factual/internal knowledge
 - web → real-time or external info
 - memory → ALWAYS for personalization
-"""),
-    ("human",
-     """
+""",
+        ),
+        (
+            "human",
+            """
 Query: {query}
 
 Short-term memory:
@@ -73,14 +76,18 @@ Short-term memory:
 
 Long-term memory:
 {long_memory}
-""")
-])
+""",
+        ),
+    ]
+)
 
 plan_chain = PLAN_PROMPT | llm.with_structured_output(PlanSchema)
 
-REPLAN_PROMPT = ChatPromptTemplate.from_messages([
-    ("system",
-     """
+REPLAN_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            """
 You are a ReAct evaluator.
 
 Decide:
@@ -95,9 +102,11 @@ STRATEGY:
    This triggers the RAG agent to save the Web info into the database.
 
 Return structured output only.
-"""),
-    ("human",
-     """
+""",
+        ),
+        (
+            "human",
+            """
 Query: {query}
 
 RAG:
@@ -108,15 +117,19 @@ Web:
 
 Memory:
 {memory}
-""")
-])
+""",
+        ),
+    ]
+)
 
 replan_chain = REPLAN_PROMPT | llm.with_structured_output(ReplanSchema)
 
 
-FINAL_PROMPT = ChatPromptTemplate.from_messages([
-    ("system",
-     """
+FINAL_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            """
 You are a final reasoning agent.
 
 Use ONLY provided sources:
@@ -127,9 +140,11 @@ Use ONLY provided sources:
 Rules:
 - Never hallucinate missing facts
 - If info is missing, say so
-"""),
-    ("human",
-     """
+""",
+        ),
+        (
+            "human",
+            """
 Query: {query}
 
 Short-term memory:
@@ -146,8 +161,10 @@ RAG:
 
 Web:
 {web}
-""")
-])
+""",
+        ),
+    ]
+)
 
 final_chain = FINAL_PROMPT | llm | StrOutputParser()
 
@@ -156,9 +173,7 @@ def build_short_term_memory(session_id: str, limit: int = 10):
     history = get_chat_history(session_id, limit)
 
     if history:
-        return "\n".join([
-            f"{h['role']}: {h['content']}" for h in history
-        ])
+        return "\n".join([f"{h['role']}: {h['content']}" for h in history])
 
     long_memory = get_long_term_memory(session_id, limit=5)
 
@@ -170,30 +185,23 @@ def build_short_term_memory(session_id: str, limit: int = 10):
             session_id,
             role="system",
             content=f"[BOOTSTRAP_MEMORY] {mem['content']}",
-            model_used="bootstrap"
+            model_used="bootstrap",
         )
 
     history = get_chat_history(session_id, limit)
 
-    return "\n".join([
-        f"{h['role']}: {h['content']}" for h in history
-    ])
+    return "\n".join([f"{h['role']}: {h['content']}" for h in history])
 
 
 def build_long_term_memory(session_id: str, limit: int = 20):
     history = get_long_term_memory(session_id, limit)
     if not history:
         return "No long-term memory found."
-    return "\n".join([
-        f"{h['source'] or 'unknown'}: {h['content']}"
-        for h in history
-    ])
+    return "\n".join([f"{h['source'] or 'unknown'}: {h['content']}" for h in history])
+
 
 fallback_llm = ChatOpenAI(
-    api_key=Config.OPENAI_API_KEY,
-    model="gpt-4o-mini",
-    temperature=0,
-    max_tokens=400
+    api_key=Config.OPENAI_API_KEY, model="gpt-4o-mini", temperature=0, max_tokens=400
 )
 
 fallback_chain = FINAL_PROMPT | fallback_llm | StrOutputParser()
@@ -206,7 +214,7 @@ async def safe_llm_call(payload):
     except Exception as e:
         logger.warning("Anthropic failed switching to OpenAI:", str(e))
         return await fallback_chain.ainvoke(payload)
-    
+
 
 def trim(text: str, limit: int = MAX_CONTEXT_CHARS):
     if not text:
@@ -222,29 +230,30 @@ async def aggregate_response(query: str, session_id: str, state_data: dict):
     short_memory = trim(state_data.get("short_memory", ""), 800)
     long_memory = trim(state_data.get("long_memory", ""), 800)
 
-    final_answer = await safe_llm_call({
-        "query": query,
-        "short_memory": short_memory,
-        "long_memory": long_memory,
-        "memory": memory_content,
-        "rag": rag_content,
-        "web": web_content
-    })
+    final_answer = await safe_llm_call(
+        {
+            "query": query,
+            "short_memory": short_memory,
+            "long_memory": long_memory,
+            "memory": memory_content,
+            "rag": rag_content,
+            "web": web_content,
+        }
+    )
 
-    asyncio.create_task(asyncio.to_thread(
-        insert_long_term_memory,
-        session_id,
-        f"Q: {query} | A: {final_answer[:500]}",
-        "hybrid"
-    ))
+    asyncio.create_task(
+        asyncio.to_thread(
+            insert_long_term_memory,
+            session_id,
+            f"Q: {query} | A: {final_answer[:500]}",
+            "hybrid",
+        )
+    )
 
-    asyncio.create_task(asyncio.to_thread(
-        insert_message,
-        session_id,
-        "assistant",
-        final_answer,
-        "claude-sonnet-4-6"
-    ))
+    asyncio.create_task(
+        asyncio.to_thread(
+            insert_message, session_id, "assistant", final_answer, "claude-sonnet-4-6"
+        )
+    )
 
     return final_answer
-

@@ -10,6 +10,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 logger = get_logger("upload-service")
 
+
 @traceable(name="upload_service")
 async def handle_upload(file: UploadFile, background_tasks: BackgroundTasks):
     try:
@@ -30,15 +31,9 @@ async def handle_upload(file: UploadFile, background_tasks: BackgroundTasks):
 
         logger.info(f"Background ingestion started | file_id={file_id}")
 
-        return {
-            "file_id": file_id,
-            "status": "processing"
-        }
+        return {"file_id": file_id, "status": "processing"}
 
     except Exception as e:
         logger.exception(f"Upload failed | filename={getattr(file, 'filename', None)}")
 
-        raise HTTPException(
-            status_code=500,
-            detail="File upload failed"
-        )
+        raise HTTPException(status_code=500, detail="File upload failed")

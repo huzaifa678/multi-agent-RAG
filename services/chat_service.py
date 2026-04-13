@@ -4,8 +4,8 @@ from prompt_optimization.context_chains import contextualize
 from schemas.chat import ChatRequest
 from utils.logger import get_logger
 
-
 logger = get_logger("chat-service")
+
 
 @traceable(name="chat_service")
 async def handle_chat(payload: ChatRequest):
@@ -15,10 +15,9 @@ async def handle_chat(payload: ChatRequest):
 
         logger.info(f"Chat service started | session_id={session_id} | query={query}")
 
-        rewritten_query = await contextualize({
-            "input": query,
-            "history": payload.history
-        })
+        rewritten_query = await contextualize(
+            {"input": query, "history": payload.history}
+        )
 
         logger.info(f"Query contextualized | session_id={session_id}")
 
@@ -33,6 +32,8 @@ async def handle_chat(payload: ChatRequest):
         raise
 
     except Exception as e:
-        logger.exception(f"Unexpected error in chat service | session_id={payload.session_id}")
+        logger.exception(
+            f"Unexpected error in chat service | session_id={payload.session_id}"
+        )
 
         raise

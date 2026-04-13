@@ -9,13 +9,14 @@ from core.runtime import runtimeObject
 router = APIRouter()
 logger = get_logger("chat-api")
 
+
 @router.post("/chat")
 @traceable(name="chat_endpoint")
 async def chat(payload: ChatRequest):
-    
+
     if not runtimeObject.ready:
         raise HTTPException(status_code=503, detail="Service warming up")
-    
+
     try:
         logger.info(f"Incoming chat request: {payload}")
 
@@ -31,7 +32,4 @@ async def chat(payload: ChatRequest):
     except Exception as e:
         logger.exception("Unexpected error in /chat endpoint")
 
-        raise HTTPException(
-            status_code=500,
-            detail="Internal Server Error"
-        )
+        raise HTTPException(status_code=500, detail="Internal Server Error")

@@ -5,6 +5,7 @@ logger = get_logger("app")
 
 background_tasks = set()
 
+
 async def shutdown_handler(timeout: int = 10):
     logger.info("Shutdown initiated. Waiting for tasks...")
 
@@ -14,8 +15,7 @@ async def shutdown_handler(timeout: int = 10):
 
     try:
         await asyncio.wait_for(
-            asyncio.gather(*background_tasks, return_exceptions=True),
-            timeout=timeout
+            asyncio.gather(*background_tasks, return_exceptions=True), timeout=timeout
         )
         logger.info("All tasks completed gracefully.")
 

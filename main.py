@@ -6,12 +6,14 @@ from core import runtime
 from graph.workflow import build_workflow_graph
 from core.runtime import runtimeObject
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    runtime.app_graph = build_workflow_graph() # Build the graph once at startup
+    runtime.app_graph = build_workflow_graph()  # Build the graph once at startup
     await runtimeObject.init()
     yield
     await runtimeObject.shutdown()
+
 
 app = FastAPI(lifespan=lifespan)
 

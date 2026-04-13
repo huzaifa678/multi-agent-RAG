@@ -7,12 +7,14 @@ mcp = FastMCP("rag-mcp-server")
 
 app = mcp.http_app
 
+
 @mcp.tool()
 def add_documents_tool(docs: list):
     """
     Add documents to RAG vectorstore
     """
     return add_documents(docs)
+
 
 @mcp.tool()
 @traceable(name="mcp_rag_tool")

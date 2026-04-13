@@ -8,7 +8,7 @@ from agents.aggregator_agent import (
     build_short_term_memory,
     build_long_term_memory,
     plan_chain,
-    replan_chain
+    replan_chain,
 )
 
 from core import runtime
@@ -26,7 +26,7 @@ class WorkflowState(TypedDict, total=False):
 
     agent_calls: Annotated[List[str], operator.add]
     executed_calls: Annotated[List[str], operator.add]
-    confidence: Dict[str, float] 
+    confidence: Dict[str, float]
 
     rag: str
     web: str
@@ -41,11 +41,13 @@ def planner_node(state: WorkflowState):
     short_memory = build_short_term_memory(state["session_id"])
     long_memory = build_long_term_memory(state["session_id"])
 
-    plan_result = plan_chain.invoke({
-        "query": state["query"],
-        "short_memory": short_memory,
-        "long_memory": long_memory
-    })
+    plan_result = plan_chain.invoke(
+        {
+            "query": state["query"],
+            "short_memory": short_memory,
+            "long_memory": long_memory,
+        }
+    )
 
     if not plan_result.agent_calls:
         plan_result.agent_calls = ["memory"]
@@ -64,9 +66,10 @@ def planner_node(state: WorkflowState):
         "confidence": dynamic_confidence,
         "planner_confidence_log": {
             "raw_confidence": dynamic_confidence,
-            "ordered_tools": tool_names
-        }
+            "ordered_tools": tool_names,
+        },
     }
+
 
 def route_tools(state: WorkflowState):
     if state.get("done"):
@@ -78,31 +81,28 @@ def route_tools(state: WorkflowState):
 
     if "web" in executed and "rag" not in executed:
         return "rag"
-    
+
     if "web" in executed and "memory" not in executed and "memory" in calls:
         return "memory"
-    
+
     if "memory" not in executed:
         return "memory"
-    
+
     to_run = [c for c in calls if c not in executed]
-    
+
     if not to_run:
         return "aggregator"
-    
-    return to_run 
+
+    return to_run
 
 
 async def rag_node(state: WorkflowState):
-    web_data = state.get("web") 
+    web_data = state.get("web")
     result = await run_rag(state["query"], web_data)
 
     executed = state.get("executed_calls", []) + ["rag"]
 
-    return {
-        "rag": result["content"],
-        "executed_calls": executed
-    }
+    return {"rag": result["content"], "executed_calls": executed}
 
 
 async def web_node(state: WorkflowState):
@@ -110,10 +110,7 @@ async def web_node(state: WorkflowState):
 
     executed = state.get("executed_calls", []) + ["web"]
 
-    return {
-        "web": result["content"],
-        "executed_calls": executed
-    }
+    return {"web": result["content"], "executed_calls": executed}
 
 
 async def memory_node(state: WorkflowState):
@@ -121,49 +118,41 @@ async def memory_node(state: WorkflowState):
 
     executed = state.get("executed_calls", []) + ["memory"]
 
-    return {
-        "memory": result["content"],
-        "executed_calls": executed
-    }
+    return {"memory": result["content"], "executed_calls": executed}
 
 
 def replan_node(state: WorkflowState):
 
     existing_calls = state.get("agent_calls", [])
-    
-    result = replan_chain.invoke({
-        "query": state["query"],
-        "rag": state.get("rag", ""),
-        "web": state.get("web", ""),
-        "memory": state.get("memory", "")
-    })
+
+    result = replan_chain.invoke(
+        {
+            "query": state["query"],
+            "rag": state.get("rag", ""),
+            "web": state.get("web", ""),
+            "memory": state.get("memory", ""),
+        }
+    )
 
     new_calls = result.agent_calls or []
     updated_calls = list(set(existing_calls + new_calls))
-    
+
     is_done = getattr(result, "done", False)
-    
+
     return {
         "agent_calls": updated_calls,
         "done": is_done,
-        "replan_debug": {
-            "next_calls": new_calls,
-            "done": is_done
-        }
+        "replan_debug": {"next_calls": new_calls, "done": is_done},
     }
 
 
 async def aggregator_node(state: WorkflowState):
 
     response_text = await aggregate_response(
-        query=state["query"],
-        session_id=state.get("session_id"),
-        state_data=state
+        query=state["query"], session_id=state.get("session_id"), state_data=state
     )
-    
-    return {
-        "final_response": response_text
-    }
+
+    return {"final_response": response_text}
 
 
 def build_workflow_graph():
@@ -191,8 +180,8 @@ def build_workflow_graph():
             "web": "web",
             "memory": "memory",
             "replan": "replan",
-            "aggregator": "aggregator"
-        }
+            "aggregator": "aggregator",
+        },
     )
 
     graph.add_edge("aggregator", END)
@@ -203,10 +192,7 @@ def build_workflow_graph():
 @traceable(name="langgraph_workflow")
 async def execute_workflow(query: str, session_id: str) -> Dict[str, Any]:
 
-    state = await runtime.app_graph.ainvoke({
-        "query": query,
-        "session_id": session_id
-    })
+    state = await runtime.app_graph.ainvoke({"query": query, "session_id": session_id})
 
     return {
         "response": state.get("final_response", ""),
@@ -216,5 +202,5 @@ async def execute_workflow(query: str, session_id: str) -> Dict[str, Any]:
             "memory": state.get("memory"),
             "agent_calls": state.get("agent_calls"),
             "executed_calls": state.get("executed_calls"),
-        }
+        },
     }
