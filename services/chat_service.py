@@ -1,5 +1,5 @@
 from langsmith import traceable
-from graph.workflow import execute_workflow
+from graph.workflow import Workflow, execute_workflow
 from prompt_optimization.context_chains import contextualize
 from schemas.chat import ChatRequest
 from utils.logger import get_logger
@@ -7,8 +7,10 @@ from utils.logger import get_logger
 logger = get_logger("chat-service")
 
 
-@traceable(name="chat_service")
-async def handle_chat(payload: ChatRequest):
+async def handle_chat(
+    payload: ChatRequest,
+    workflow: Workflow = None,
+):
     try:
         query = payload.query
         session_id = payload.session_id
@@ -21,7 +23,9 @@ async def handle_chat(payload: ChatRequest):
 
         logger.info(f"Query contextualized | session_id={session_id}")
 
-        result = await execute_workflow(rewritten_query, session_id)
+        result = await execute_workflow(
+            rewritten_query, session_id, workflow=workflow
+        )
 
         logger.info(f"Workflow executed successfully | session_id={session_id}")
 
