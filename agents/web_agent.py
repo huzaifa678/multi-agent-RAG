@@ -1,20 +1,11 @@
-from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
 from tools.web.web_tools import search_web
-from utils.config import Config
+from agents.config import AgentConfig
+from agents.prompts import web_prompt
 
-llm = ChatOpenAI(api_key=Config.OPENAI_API_KEY, model="gpt-4o-mini", temperature=0)
+llm = AgentConfig.web_llm()
 
-WEB_PROMPT = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            "Use ONLY provided results Do NOT repeat generic definitions Avoid template-like explanations Focus on unique facts only",
-        ),
-        ("human", "Query: {query}\n\nResults:\n{results}"),
-    ]
-)
+WEB_PROMPT = web_prompt()
 
 web_chain = WEB_PROMPT | llm | StrOutputParser()
 

@@ -1,28 +1,17 @@
 import asyncio
 
-from langchain_groq import ChatGroq
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
 from langsmith import traceable
 from utils.text import chunk_text
 from rag.retriever import retrieve_context
-from utils.config import Config
 from rag.chroma_store import vectorstore
 from utils.text import clean_text
+from agents.config import AgentConfig
+from agents.prompts import rag_prompt
 
-llm = ChatGroq(
-    api_key=Config.GROQ_API_KEY, model="llama-3.3-70b-versatile", temperature=0
-)
+llm = AgentConfig.rag_llm()
 
-RAG_PROMPT = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            "Answer ONLY using context. If missing, say 'not found in knowledge base'.",
-        ),
-        ("human", "Query: {query}\n\nContext:\n{context}"),
-    ]
-)
+RAG_PROMPT = rag_prompt()
 
 rag_chain = RAG_PROMPT | llm | StrOutputParser()
 
