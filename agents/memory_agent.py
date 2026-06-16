@@ -1,30 +1,15 @@
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
-from utils.config import Config
 from tools.memory.memory_tools import get_history
 from tools.memory.memory_tools import save_message
 from utils.logger import get_logger
+from agents.config import AgentConfig
+from agents.prompts import memory_prompt
 
 logger = get_logger()
 
-llm = ChatOpenAI(api_key=Config.OPENAI_API_KEY, model="gpt-4o-mini", temperature=0)
+llm = AgentConfig.memory_llm()
 
-MEMORY_PROMPT = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            """
-Analyze the provided conversation history.
-1. If you find user preferences, goals, or personal context, list them as 'Stable Facts'.
-2. If the conversation is a general topic (like Rust programming), provide a 1-sentence summary of the discussion topic.
-3. Combine these into a concise memory entry.
-4. If the history is completely empty or contains no meaningful information, return: NO_MEMORY
-""",
-        ),
-        ("human", "{history}"),
-    ]
-)
+MEMORY_PROMPT = memory_prompt()
 
 memory_chain = MEMORY_PROMPT | llm | StrOutputParser()
 
