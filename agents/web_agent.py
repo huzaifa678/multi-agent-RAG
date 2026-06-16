@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from agents.base import BaseAgent
+from agents.config import AgentConfig
+from agents.prompts import web_prompt
 from tools.web.web_tools import search_web
-from utils.config import Config
 
 
 class WebAgent(BaseAgent):
@@ -22,19 +25,9 @@ class WebAgent(BaseAgent):
         prompt: ChatPromptTemplate = None,
         search_fn=None,
     ):
-        self.llm = llm or ChatOpenAI(
-            api_key=Config.OPENAI_API_KEY, model="gpt-4o-mini", temperature=0
-        )
+        self.llm = llm or AgentConfig.web_llm()
 
-        self.prompt = prompt or ChatPromptTemplate.from_messages(
-            [
-                (
-                    "system",
-                    "Use ONLY provided results Do NOT repeat generic definitions Avoid template-like explanations Focus on unique facts only",
-                ),
-                ("human", "Query: {query}\n\nResults:\n{results}"),
-            ]
-        )
+        self.prompt = prompt or web_prompt()
 
         self.chain = self.prompt | self.llm | StrOutputParser()
         self._search_fn = search_fn or search_web

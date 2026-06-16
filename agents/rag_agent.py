@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 
 from langchain_groq import ChatGroq
@@ -6,9 +8,10 @@ from langchain_core.prompts import ChatPromptTemplate
 from langsmith import traceable
 
 from agents.base import BaseAgent
+from agents.config import AgentConfig
+from agents.prompts import rag_prompt
 from rag.chroma_store import vectorstore
 from rag.retriever import retrieve_context
-from utils.config import Config
 from utils.text import chunk_text, clean_text
 
 
@@ -28,21 +31,9 @@ class RAGAgent(BaseAgent):
         retrieve_fn=None,
         vectorstore_ref=None,
     ):
-        self.llm = llm or ChatGroq(
-            api_key=Config.GROQ_API_KEY,
-            model="llama-3.3-70b-versatile",
-            temperature=0,
-        )
+        self.llm = llm or AgentConfig.rag_llm()
 
-        self.prompt = prompt or ChatPromptTemplate.from_messages(
-            [
-                (
-                    "system",
-                    "Answer ONLY using context. If missing, say 'not found in knowledge base'.",
-                ),
-                ("human", "Query: {query}\n\nContext:\n{context}"),
-            ]
-        )
+        self.prompt = prompt or rag_prompt()
 
         self.chain = self.prompt | self.llm | StrOutputParser()
         self._retrieve_fn = retrieve_fn or retrieve_context
